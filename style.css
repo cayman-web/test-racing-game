@@ -20,64 +20,64 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
 
 .hud{position:fixed;color:var(--text);pointer-events:none;user-select:none;z-index:5;}
 .panel{background:linear-gradient(180deg,var(--panel),#0c0c0e);
-  border:1px solid var(--panel-edge);border-radius:12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  border:1px solid var(--panel-edge);border-radius:7px;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);}
 
 /* ---- Верх-центр: мини-карта + время круга ---- */
-#topPanel{left:50%;top:calc(10px + var(--safe-t));transform:translateX(-50%);
-  display:flex;align-items:center;gap:12px;padding:8px 14px;}
-#minimap{display:block;border-radius:8px;}
-#timing .row{font-family:"SF Mono","Consolas",monospace;font-size:12px;color:var(--text-dim);
-  display:flex;justify-content:space-between;gap:12px;margin:1px 0;white-space:nowrap;}
-#timing .row b{color:var(--text);font-size:15px;font-weight:700;}
+#topPanel{left:50%;top:calc(6px + var(--safe-t));transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;padding:4px 7px;}
+#minimap{display:block;border-radius:4px;}
+#timing .row{font-family:"SF Mono","Consolas",monospace;font-size:7px;color:var(--text-dim);
+  display:flex;justify-content:space-between;gap:7px;margin:0;white-space:nowrap;}
+#timing .row b{color:var(--text);font-size:9px;font-weight:700;}
 #lapCount{color:var(--grello);}
 
 /* ---- Низ-центр: передача / обороты / скорость ---- */
-#cluster{left:50%;bottom:calc(10px + var(--safe-b));transform:translateX(-50%);
-  padding:10px 22px 10px;text-align:center;min-width:230px;}
-#clusterTop{display:flex;align-items:center;justify-content:center;gap:16px;}
-#gearBig{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:56px;
-  color:var(--grello);line-height:1;text-shadow:0 0 18px rgba(215,230,0,.35);
-  background:#1c1c20;border:1px solid var(--panel-edge);border-radius:10px;
-  min-width:58px;padding:2px 8px;}
-#rpmBlock{display:flex;flex-direction:column;align-items:flex-start;min-width:100px;}
-#rpmNum{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:26px;color:var(--text);line-height:1;}
-#rpmLabel{font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-bottom:4px;}
-#rpmBar{width:100px;height:8px;border-radius:4px;background:#1c1c20;border:1px solid var(--panel-edge);overflow:hidden;}
+#cluster{left:50%;bottom:calc(6px + var(--safe-b));transform:translateX(-50%);
+  padding:5px 12px 5px;text-align:center;min-width:120px;}
+#clusterTop{display:flex;align-items:center;justify-content:center;gap:8px;}
+#gearBig{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:28px;
+  color:var(--grello);line-height:1;text-shadow:0 0 9px rgba(215,230,0,.35);
+  background:#1c1c20;border:1px solid var(--panel-edge);border-radius:5px;
+  min-width:30px;padding:1px 4px;}
+#rpmBlock{display:flex;flex-direction:column;align-items:flex-start;min-width:52px;}
+#rpmNum{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:13px;color:var(--text);line-height:1;}
+#rpmLabel{font-size:6px;color:var(--text-dim);letter-spacing:1px;margin-bottom:2px;}
+#rpmBar{width:52px;height:4px;border-radius:2px;background:#1c1c20;border:1px solid var(--panel-edge);overflow:hidden;}
 #rpmFill{height:100%;width:0%;background:linear-gradient(90deg,var(--grello-dim),var(--grello));transition:width .06s linear;}
-#speedSmall{margin-top:6px;font-family:"SF Mono","Consolas",monospace;font-size:15px;color:var(--text-dim);letter-spacing:1px;}
-#speedSmall span{font-size:11px;}
+#speedSmall{margin-top:3px;font-family:"SF Mono","Consolas",monospace;font-size:8px;color:var(--text-dim);letter-spacing:.5px;}
+#speedSmall span{font-size:6px;}
 
 /* ---- Off-track flag ---- */
-#offtrack{left:50%;top:calc(100px + var(--safe-t));transform:translateX(-50%);
+#offtrack{left:50%;top:calc(52px + var(--safe-t));transform:translateX(-50%);
   background:rgba(255,59,48,.12);border:1px solid var(--warn);color:var(--warn);
-  font-weight:700;letter-spacing:2px;font-size:12px;padding:5px 14px;border-radius:8px;
+  font-weight:700;letter-spacing:1px;font-size:7px;padding:3px 8px;border-radius:5px;
   opacity:0;transition:opacity .15s;}
 
 /* ---- Тач-контролы ---- */
-.ctrlPanel{display:flex;gap:10px;padding:10px;background:rgba(17,17,20,.55);
+.ctrlPanel{display:flex;gap:5px;padding:5px;background:rgba(17,17,20,.55);
   border:1px solid var(--panel-edge);backdrop-filter:blur(4px);}
 .ctrlBtn{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;
-  border:1px solid var(--panel-edge);border-radius:14px;background:#1c1c20;color:var(--text);
-  font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:15px;letter-spacing:1px;
+  border:1px solid var(--panel-edge);border-radius:8px;background:#1c1c20;color:var(--text);
+  font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:8px;letter-spacing:.5px;
   display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
-.ctrlBtn.big{width:74px;height:74px;font-size:26px;}
+.ctrlBtn.big{width:38px;height:38px;font-size:15px;}
 .ctrlBtn:active{background:var(--grello-dim);color:#111;}
 .gasBtn{color:var(--grello);}
 .gasBtn:active{background:var(--grello);color:#111;}
 .warnBtn{color:var(--warn);}
 .warnBtn:active{background:var(--warn);color:#111;}
 
-#zoomCtrl{right:calc(10px + var(--safe-r));top:calc(10px + var(--safe-t));flex-direction:column;}
-#zoomCtrl .ctrlBtn{width:46px;height:46px;font-size:22px;}
+#zoomCtrl{right:calc(6px + var(--safe-r));top:calc(6px + var(--safe-t));flex-direction:column;}
+#zoomCtrl .ctrlBtn{width:24px;height:24px;font-size:12px;}
 
-#steerCtrl{left:calc(10px + var(--safe-l));bottom:calc(10px + var(--safe-b));}
-#pedalCtrl{right:calc(10px + var(--safe-r));bottom:calc(10px + var(--safe-b));}
+#steerCtrl{left:calc(6px + var(--safe-l));bottom:calc(6px + var(--safe-b));}
+#pedalCtrl{right:calc(6px + var(--safe-r));bottom:calc(6px + var(--safe-b));}
 
 /* ---- Подсказка "поверни телефон" ---- */
 #rotateHint{display:none;position:fixed;inset:0;z-index:50;background:#0a0a0c;color:var(--text);
-  flex-direction:column;align-items:center;justify-content:center;gap:14px;font-size:15px;text-align:center;}
-.rotateIcon{font-size:46px;color:var(--grello);}
+  flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:8px;text-align:center;}
+.rotateIcon{font-size:23px;color:var(--grello);}
 @media (orientation: portrait){
   #rotateHint{display:flex;}
 }

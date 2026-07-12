@@ -3,7 +3,14 @@
    ========================================================================= */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+let DPR = 1;
+function resizeCanvas(){
+  DPR = window.devicePixelRatio || 1;
+  canvas.width = Math.round(window.innerWidth * DPR);
+  canvas.height = Math.round(window.innerHeight * DPR);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
 window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
 // Зум: пикселей на метр. Регулируется колесом мыши или клавишами +/-.
@@ -138,25 +145,37 @@ function drawCar(){
 }
 
 const minimap = document.getElementById('minimap');
+const MINIMAP_CSS = 54; // отображаемый размер в CSS-пикселях
+let minimapDPR = 1;
+function setupMinimap(){
+  minimapDPR = window.devicePixelRatio || 1;
+  minimap.width = Math.round(MINIMAP_CSS*minimapDPR);
+  minimap.height = Math.round(MINIMAP_CSS*minimapDPR);
+  minimap.style.width = MINIMAP_CSS+'px';
+  minimap.style.height = MINIMAP_CSS+'px';
+}
+setupMinimap();
+window.addEventListener('resize', setupMinimap);
+
 function drawMinimap(){
   const mw = minimap.width, mh = minimap.height;
   const mctx = minimap.getContext('2d');
   mctx.clearRect(0,0,mw,mh);
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   for(const p of CENTER){ minX=Math.min(minX,p[0]); maxX=Math.max(maxX,p[0]); minY=Math.min(minY,p[1]); maxY=Math.max(maxY,p[1]); }
-  const pad=8, w=mw-2*pad, h=mh-2*pad;
+  const pad=4*minimapDPR, w=mw-2*pad, h=mh-2*pad;
   const s = Math.min(w/(maxX-minX), h/(maxY-minY));
   function tx(p){ return pad + (p[0]-minX)*s; }
   function ty(p){ return pad + (p[1]-minY)*s; }
   mctx.strokeStyle = 'rgba(231,231,234,.5)';
-  mctx.lineWidth = 3;
+  mctx.lineWidth = 1.5*minimapDPR;
   mctx.beginPath();
   mctx.moveTo(tx(CENTER[0]), ty(CENTER[0]));
   for(let i=1;i<N;i++) mctx.lineTo(tx(CENTER[i]), ty(CENTER[i]));
   mctx.closePath(); mctx.stroke();
   mctx.fillStyle = getCss('--grello');
   mctx.beginPath();
-  mctx.arc(tx([car.x,car.y]), ty([car.x,car.y]), 4, 0, Math.PI*2);
+  mctx.arc(tx([car.x,car.y]), ty([car.x,car.y]), 2*minimapDPR, 0, Math.PI*2);
   mctx.fill();
 }
 
@@ -164,7 +183,7 @@ function render(){
   ctx.save();
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.translate(canvas.width/2, canvas.height/2);
-  ctx.scale(ZOOM,ZOOM);
+  ctx.scale(ZOOM*DPR,ZOOM*DPR);
   ctx.translate(-car.x,-car.y);
   drawTrack();
   drawCar();
