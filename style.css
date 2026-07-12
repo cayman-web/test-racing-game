@@ -55,13 +55,13 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
   opacity:0;transition:opacity .15s;}
 
 /* ---- Тач-контролы ---- */
-.ctrlPanel{display:flex;gap:5px;padding:5px;background:rgba(17,17,20,.55);
+.ctrlPanel{display:flex;gap:8px;padding:8px;background:rgba(17,17,20,.55);
   border:1px solid var(--panel-edge);backdrop-filter:blur(4px);}
 .ctrlBtn{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;
-  border:1px solid var(--panel-edge);border-radius:8px;background:#1c1c20;color:var(--text);
-  font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:8px;letter-spacing:.5px;
+  border:1px solid var(--panel-edge);border-radius:13px;background:#1c1c20;color:var(--text);
+  font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:13px;letter-spacing:.5px;
   display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
-.ctrlBtn.big{width:38px;height:38px;font-size:15px;}
+.ctrlBtn.big{width:61px;height:61px;font-size:24px;}
 .ctrlBtn:active{background:var(--grello-dim);color:#111;}
 .gasBtn{color:var(--grello);}
 .gasBtn:active{background:var(--grello);color:#111;}
@@ -69,7 +69,7 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
 .warnBtn:active{background:var(--warn);color:#111;}
 
 #zoomCtrl{right:calc(6px + var(--safe-r));top:calc(6px + var(--safe-t));flex-direction:column;}
-#zoomCtrl .ctrlBtn{width:24px;height:24px;font-size:12px;}
+#zoomCtrl .ctrlBtn{width:38px;height:38px;font-size:19px;}
 
 #steerCtrl{left:calc(6px + var(--safe-l));bottom:calc(6px + var(--safe-b));}
 #pedalCtrl{right:calc(6px + var(--safe-r));bottom:calc(6px + var(--safe-b));}
