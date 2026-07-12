@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GT3 Racer">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>GT3 RACER — Porsche 992 GT3 R Test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- Подсказка повернуть телефон - игра рассчитана на альбомную ориентацию -->
+<div id="rotateHint">
+  <div class="rotateIcon">⟳</div>
+  Поверните телефон горизонтально
+</div>
+
+<!-- Верх по центру: мини-карта + время круга -->
+<div class="hud panel" id="topPanel">
+  <canvas id="minimap" width="108" height="108"></canvas>
+  <div id="timing">
+    <div class="row">КРУГ <b id="lapCount">1</b></div>
+    <div class="row">ТЕК <b id="curLap">0:00.00</b></div>
+    <div class="row">ЛУЧШ <b id="bestLap">—</b></div>
+  </div>
+</div>
+
+<!-- Низ по центру: передача (приоритет) + обороты + скорость -->
+<div class="hud panel" id="cluster">
+  <div id="clusterTop">
+    <div id="gearBig">1</div>
+    <div id="rpmBlock">
+      <div id="rpmNum">1000</div>
+      <div id="rpmLabel">RPM</div>
+      <div id="rpmBar"><div id="rpmFill"></div></div>
+    </div>
+  </div>
+  <div id="speedSmall">0<span> км/ч</span></div>
+</div>
+
+<div class="hud" id="offtrack">СХОД С ТРАССЫ</div>
+
+<!-- Верх-право: зум -->
+<div class="hud panel ctrlPanel" id="zoomCtrl">
+  <button id="zoomIn" class="ctrlBtn">+</button>
+  <button id="zoomOut" class="ctrlBtn">−</button>
+</div>
+
+<!-- Низ-лево: руль -->
+<div class="hud panel ctrlPanel" id="steerCtrl">
+  <button id="steerLeft" class="ctrlBtn big">◀</button>
+  <button id="steerRight" class="ctrlBtn big">▶</button>
+</div>
+
+<!-- Низ-право: газ/тормоз -->
+<div class="hud panel ctrlPanel" id="pedalCtrl">
+  <button id="brakeBtn" class="ctrlBtn big warnBtn">BRAKE</button>
+  <button id="gasBtn" class="ctrlBtn big gasBtn">GAS</button>
+</div>
+
+<script src="track.js"></script>
+<script src="car.js"></script>
+<script src="render.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
