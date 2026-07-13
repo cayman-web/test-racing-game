@@ -44,52 +44,63 @@ document.getElementById('zoomOut').addEventListener('pointerdown', e=>{ e.preven
 
 /* =========================================================================
    КОСМЕТИЧЕСКАЯ СИМУЛЯЦИЯ ПЕРЕДАЧ/ОБОРОТОВ (на физику не влияет)
-   6-ступенчатая последовательная КПП. Редлайн каждой передачи случаен
-   в диапазоне 8500-9000 об/мин и линейно связан со скоростью переключения
-   в пределах заданного диапазона для этой передачи.
-   Диапазон 1-й передачи (83-88 км/ч) не был задан явно и подобран по
-   пропорции остальных передач - при желании легко подправить ниже.
+   6-ступенчатая последовательная КПП. Пять переходов между передачами:
+   1->2: 108-113 км/ч, 2->3: 140-143, 3->4: 170-174, 4->5: 209-212, 5->6: 240-242.
+   Внутри каждого диапазона переключение случайно и линейно связано с редлайном
+   8500-9000 об/мин (нижняя граница диапазона ~8500, верхняя ~9000).
+   У 6-й (последней) передачи верхней границы переключения нет - едем до
+   реального физического предела машины, обороты стремятся к ~9000.
    ========================================================================= */
-const GEAR_RANGES_KMH = [
-  [83,88],     // 1 передача
-  [108,113],   // 2 передача
-  [140,143],   // 3 передача
-  [170,174],   // 4 передача
-  [209,212],   // 5 передача
-  [240,242],   // 6 передача
+const SHIFT_RANGES_KMH = [
+  [108,113],   // переключение 1 -> 2
+  [140,143],   // переключение 2 -> 3
+  [170,174],   // переключение 3 -> 4
+  [209,212],   // переключение 4 -> 5
+  [240,242],   // переключение 5 -> 6
 ];
 const IDLE_RPM = 1000;
-const LOW_RPM_AFTER_SHIFT = 4800; // во сколько падают обороты сразу после переключения вверх (кроме 1-й передачи)
+const LOW_RPM_AFTER_SHIFT = 4800; // во сколько падают обороты сразу после переключения вверх (кроме старта с 1-й передачи)
+const REV_LIMITER_RPM = 9000;     // потолок отображения оборотов на 6-й передаче
 
-function rollGear(i){
+function rollShift(i){
   const r = Math.random();
-  const [lo,hi] = GEAR_RANGES_KMH[i];
-  return { topKmh: lo + r*(hi-lo), topRpm: 8500 + r*500 };
+  const [lo,hi] = SHIFT_RANGES_KMH[i];
+  return { kmh: lo + r*(hi-lo), rpm: 8500 + r*500 };
 }
 
 let gear = 1;
-let gearRoll = GEAR_RANGES_KMH.map((_,i)=>rollGear(i));
+let shiftRoll = SHIFT_RANGES_KMH.map((_,i)=>rollShift(i));
 
 function resetGearSim(){
   gear = 1;
-  gearRoll = GEAR_RANGES_KMH.map((_,i)=>rollGear(i));
+  shiftRoll = SHIFT_RANGES_KMH.map((_,i)=>rollShift(i));
 }
 
 function updateGearSim(kmh){
-  while(gear<6 && kmh >= gearRoll[gear-1].topKmh){
+  // апшифт: пока скорость перевалила через точку переключения текущей передачи
+  while(gear<6 && kmh >= shiftRoll[gear-1].kmh){
     const leavingIdx = gear-1;
     gear++;
-    gearRoll[leavingIdx] = rollGear(leavingIdx); // новый рандом на случай повторного возврата в эту передачу
+    shiftRoll[leavingIdx] = rollShift(leavingIdx); // новый рандом на случай повторного возврата в эту передачу
   }
-  while(gear>1 && kmh < gearRoll[gear-2].topKmh - 2){ // небольшой гистерезис против дребезга на границе
+  // даунш ифт с небольшим гистерезисом против дребезга на границе
+  while(gear>1 && kmh < shiftRoll[gear-2].kmh - 2){
     gear--;
   }
 
-  const lowKmh = gear===1 ? 0 : gearRoll[gear-2].topKmh;
-  const info = gearRoll[gear-1];
+  const lowKmh = gear===1 ? 0 : shiftRoll[gear-2].kmh;
   const lowRpm = gear===1 ? IDLE_RPM : LOW_RPM_AFTER_SHIFT;
-  const frac = Math.max(0, Math.min(1, (kmh-lowKmh)/(info.topKmh-lowKmh)));
-  const rpm = lowRpm + frac*(info.topRpm-lowRpm);
+  let topKmh, topRpm;
+  if(gear<=5){
+    topKmh = shiftRoll[gear-1].kmh;
+    topRpm = shiftRoll[gear-1].rpm;
+  } else {
+    // 6-я передача - границы переключения нет, используем реальную максималку машины
+    topKmh = CAR.vmax*3.6;
+    topRpm = REV_LIMITER_RPM;
+  }
+  const frac = Math.max(0, Math.min(1, (kmh-lowKmh)/(topKmh-lowKmh)));
+  const rpm = lowRpm + frac*(topRpm-lowRpm);
   return { gear, rpm };
 }
 
