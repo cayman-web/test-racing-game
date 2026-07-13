@@ -99,6 +99,9 @@ function drawTrack(){
   ctx.fillStyle = '#274d22';
   ctx.fillRect(-6000,-6000,12000,12000);
 
+  drawGravelZones();
+  drawPitlane();
+
   // асфальт
   ctx.beginPath();
   ctx.moveTo(LEFT_EDGE[0][0], LEFT_EDGE[0][1]);
@@ -123,6 +126,59 @@ function drawTrack(){
   ctx.setLineDash([]);
 
   drawFinishLine();
+}
+
+function drawGravelZones(){
+  if(!GRAVEL_ZONES || !GRAVEL_ZONES.length) return;
+  for(const zone of GRAVEL_ZONES){
+    ctx.fillStyle = '#9c8156';
+    ctx.beginPath();
+    ctx.moveTo(zone[0][0], zone[0][1]);
+    for(let i=1;i<zone.length;i++) ctx.lineTo(zone[i][0], zone[i][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#6f5a3a';
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+    // лёгкая штриховка в духе исходного скетча, для "гравийной" фактуры
+    ctx.save();
+    ctx.clip();
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const p of zone){ minX=Math.min(minX,p[0]); maxX=Math.max(maxX,p[0]); minY=Math.min(minY,p[1]); maxY=Math.max(maxY,p[1]); }
+    ctx.strokeStyle = 'rgba(111,90,58,0.55)';
+    ctx.lineWidth = 0.35;
+    const step = 3;
+    for(let d=-(maxY-minY); d<(maxX-minX); d+=step){
+      ctx.beginPath();
+      ctx.moveTo(minX+d, minY);
+      ctx.lineTo(minX+d+(maxY-minY), maxY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawPitlane(){
+  if(!PIT) return;
+  ctx.beginPath();
+  ctx.moveTo(PIT.left[0][0], PIT.left[0][1]);
+  for(let i=1;i<PIT.left.length;i++) ctx.lineTo(PIT.left[i][0], PIT.left[i][1]);
+  for(let i=PIT.right.length-1;i>=0;i--) ctx.lineTo(PIT.right[i][0], PIT.right[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = '#4a4a50';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,59,48,0.7)';
+  ctx.lineWidth = 0.3;
+  ctx.stroke();
+  // осевая линия пит-лейна
+  ctx.setLineDash([1.5,1.5]);
+  ctx.strokeStyle = 'rgba(255,255,255,.4)';
+  ctx.lineWidth = 0.2;
+  ctx.beginPath();
+  ctx.moveTo(PIT.center[0][0], PIT.center[0][1]);
+  for(let i=1;i<PIT.center.length;i++) ctx.lineTo(PIT.center[i][0], PIT.center[i][1]);
+  ctx.stroke();
+  ctx.setLineDash([]);
 }
 
 function drawCurb(edge){

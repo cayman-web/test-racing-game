@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>GT3 RACER — Выбор трассы</title>
+<link rel="stylesheet" href="menu.css">
+<style>
+  #pageRoot{display:flex;flex-direction:column;}
+  #trackGrid{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;}
+  .trackTile{position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--panel-edge);
+    background:linear-gradient(180deg,#141416,#0c0c0e);text-decoration:none;color:var(--text);
+    width:220px;height:150px;display:flex;align-items:flex-end;padding:12px;
+    box-shadow:0 8px 22px rgba(0,0,0,.45);transition:transform .12s ease, filter .12s ease;}
+  .trackTile:active{transform:scale(0.97);filter:brightness(1.08);}
+  .trackTile canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .trackTile .info{position:relative;z-index:2;}
+  .trackTile .tName{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:15px;
+    color:var(--grello);text-shadow:0 0 12px rgba(215,230,0,.3);}
+  .trackTile .tMeta{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .trackTile.current{border-color:var(--grello);}
+  .currentBadge{position:absolute;top:8px;right:8px;z-index:2;font-size:9px;letter-spacing:1px;
+    color:#111;background:var(--grello);border-radius:5px;padding:2px 6px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="pageRoot">
+  <a href="index.html" class="backLink">‹ меню</a>
+  <h1>ВЫБОР ТРАССЫ</h1>
+  <div id="trackGrid"></div>
+</div>
+<script src="track.js"></script>
+<script src="track-select.js"></script>
+</body>
+</html>

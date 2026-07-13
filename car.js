@@ -29,7 +29,7 @@ const G = 9.81;
    одни и те же, но структура уже готова под несколько трасс/машин в будущем -
    тогда просто CURRENT_TRACK/CURRENT_CAR будут выбираться на экране Drive.
    ========================================================================= */
-const CURRENT_TRACK = { id: 'sketch-circuit-01', name: 'Sketch Circuit' };
+const CURRENT_TRACK = { id: SELECTED_TRACK_ID, name: TRACK_DEF.name };
 const CURRENT_CAR   = { id: 'porsche-992-gt3r',  name: 'Porsche 992 GT3 R' };
 try{
   localStorage.setItem('gt3_lastTrack', JSON.stringify(CURRENT_TRACK));
@@ -114,13 +114,40 @@ function update(dt){
 
   // Насколько глубоко машина съехала с асфальта: 0 = на трассе, 1 = глубоко в траве
   const near0 = nearestIndex(car.x, car.y);
-  const grassPenalty = Math.max(0, Math.min(1, (near0.dist - HALF_W) / 6));
-  const onTrackFactor = 1 - 0.45*grassPenalty; // на траве сцепление слабее, но не нулевое - зацеп в жизни есть
-  car.onTrack = onTrackFactor;
+  let grassPenalty = Math.max(0, Math.min(1, (near0.dist - HALF_W) / 6));
+  let onTrackFactor = 1 - 0.45*grassPenalty; // на траве сцепление слабее, но не нулевое - зацеп в жизни есть
+  let offLimits = near0.dist > HALF_W + 0.5;
 
-  // Лимиты трассы: небольшой допуск за кромку асфальта (как бордюр), дальше - нарушение,
-  // текущий круг не будет засчитан как быстрый (но продолжаем ехать как обычно)
-  if(near0.dist > HALF_W + 0.5){
+  // Пит-лейн (если он есть у трассы): законная часть трассы, но со своим
+  // лимитом скорости - превысил его - нарушение, как в жизни
+  let onPitlane = false, pitSpeeding = false;
+  if(PIT){
+    const pdist = nearestDistOnOpenPath(car.x, car.y, PIT.center);
+    if(pdist <= PIT.halfWidth + 0.5){
+      onPitlane = true;
+      offLimits = false;
+      grassPenalty = 0;
+      onTrackFactor = 1;
+      if(speedAbs*3.6 > PIT.speedLimitKmh) pitSpeeding = true;
+    }
+  }
+
+  // Гравийно-песочная зона вылета: гораздо суровее травы, и это всегда нарушение лимитов
+  let inGravel = false;
+  if(!onPitlane && isInGravel(car.x, car.y)){
+    inGravel = true;
+    offLimits = true;
+    onTrackFactor = 0.22;
+  }
+
+  car.onTrack = onTrackFactor;
+  car.onPitlane = onPitlane;
+  car.pitSpeeding = pitSpeeding;
+  car.inGravel = inGravel;
+
+  // Лимиты трассы/питлейна нарушены - текущий круг не будет засчитан как быстрый
+  // (но продолжаем ехать как обычно, это не блокирующее наказание)
+  if(offLimits || pitSpeeding){
     lap.invalid = true;
   }
 
@@ -148,9 +175,13 @@ function update(dt){
     force -= Math.sign(v)*maxBrakeForce*brake;
   }
 
-  // Трава: сопротивление есть, но умеренное - машина всё ещё может разгоняться,
+  // Гравий - гораздо суровее травы, реально "хватает" машину за днище.
+  // Трава - сопротивление умеренное, машина всё ещё может разгоняться,
   // просто менее эффективно и с риском потерять контроль (см. закрутку ниже)
-  if(grassPenalty>0 && speedAbs>0.05){
+  if(inGravel && speedAbs>0.05){
+    const gravelDrag = 4400 + 42*speedAbs;
+    force -= Math.sign(v)*gravelDrag;
+  } else if(grassPenalty>0 && speedAbs>0.05){
     const grassDrag = grassPenalty*(1300 + 20*speedAbs);
     force -= Math.sign(v)*grassDrag;
   }
@@ -178,11 +209,12 @@ function update(dt){
     car.speed -= Math.sign(car.speed)*corneringLoss;
   }
 
-  // Пробуксовка на траве: если сильно газовать при слабом сцеплении, машину
-  // начинает стихийно закручивать (шины теряют сцепление неравномерно).
-  // На асфальте закрутка быстро гасится - "стабилизация" через сцепление шин.
-  if(grassPenalty>0.12 && speedAbs>2 && throttle>0){
-    const spinRisk = grassPenalty*throttle; // 0..1, насколько рискованно газуешь
+  // Пробуксовка на траве/гравии: если сильно газовать при слабом сцеплении, машину
+  // начинает стихийно закручивать (шины теряют сцепление неравномерно). В гравии
+  // риск выше, чем в траве. На асфальте закрутка быстро гасится.
+  if((grassPenalty>0.12 || inGravel) && speedAbs>2 && throttle>0){
+    const riskBase = inGravel ? 1 : grassPenalty;
+    const spinRisk = riskBase*throttle*(inGravel ? 1.4 : 1);
     if(spinRisk>0.18){
       const kick = (Math.random()-0.5)*2; // случайное направление рывка
       grassSpin += kick*spinRisk*34*dt;

@@ -200,6 +200,7 @@ function updateHud(){
   document.getElementById('bestLap').textContent = lap.best===null ? '—' : fmtTime(lap.best);
 
   document.getElementById('offtrack').style.opacity = car.onTrack<0.85 ? '1':'0';
+  document.getElementById('pitWarn').style.opacity = car.pitSpeeding ? '1':'0';
 }
 
 /* =========================================================================
