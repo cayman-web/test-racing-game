@@ -1,4 +1,19 @@
 /* =========================================================================
+   БЛОКИРОВКА PINCH-ZOOM / DOUBLE-TAP ZOOM (iOS Safari игнорирует touch-action
+   для этих жестов, нужны отдельные обработчики)
+   ========================================================================= */
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('gesturechange', e=>e.preventDefault());
+document.addEventListener('gestureend', e=>e.preventDefault());
+document.addEventListener('touchmove', e=>{ if(e.touches.length>1) e.preventDefault(); }, {passive:false});
+let lastTouchEndTime = 0;
+document.addEventListener('touchend', e=>{
+  const now = Date.now();
+  if(now - lastTouchEndTime <= 350) e.preventDefault();
+  lastTouchEndTime = now;
+}, {passive:false});
+
+/* =========================================================================
    ВВОД (клавиатура для отладки на компьютере + тач-кнопки для телефона)
    ========================================================================= */
 const keys = {};

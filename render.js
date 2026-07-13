@@ -28,8 +28,25 @@ function getCss(v){ return getComputedStyle(document.documentElement).getPropert
 /* ---- Спрайт машины: car.png (нос смотрит вверх/на север) с запасным силуэтом ---- */
 const carImg = new Image();
 let carImgOk = false;
-carImg.onload = ()=>{ carImgOk = true; };
-carImg.onerror = ()=>{ carImgOk = false; };
+let carShadowCanvas = null; // силуэт текстуры (по альфа-каналу) для отрисовки тени по форме машины
+
+function buildCarShadow(){
+  const w = carImg.naturalWidth, h = carImg.naturalHeight;
+  if(!w || !h){ carShadowCanvas = null; return; }
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.drawImage(carImg, 0, 0, w, h);
+  // "source-in": оставляет только там, где у текстуры была непрозрачность,
+  // и красит эти пиксели в сплошной тёмный цвет - получаем силуэт машины
+  octx.globalCompositeOperation = 'source-in';
+  octx.fillStyle = 'rgba(0,0,0,0.55)';
+  octx.fillRect(0,0,w,h);
+  carShadowCanvas = off;
+}
+
+carImg.onload = ()=>{ carImgOk = true; buildCarShadow(); };
+carImg.onerror = ()=>{ carImgOk = false; carShadowCanvas = null; };
 carImg.src = 'car.png';
 
 function drawPlaceholderCar(pxLen, pxWid){
@@ -54,6 +71,26 @@ function drawPlaceholderCar(pxLen, pxWid){
   ctx.fillStyle = 'rgba(215,230,0,0.25)';
   ctx.beginPath();
   ctx.ellipse(0,-hl*0.25, hw*0.55, hl*0.28, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Та же форма, что и заглушка выше, но сплошной тёмной заливкой - используется как тень,
+// пока не подставлена своя текстура car.png
+function drawPlaceholderSilhouette(pxLen, pxWid){
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  const hl = pxLen/2, hw = pxWid/2;
+  ctx.beginPath();
+  ctx.moveTo(0,-hl);
+  ctx.bezierCurveTo(hw*0.9,-hl*0.7, hw,-hl*0.1, hw*0.85, hl*0.35);
+  ctx.lineTo(hw*0.95, hl*0.55);
+  ctx.lineTo(hw*0.6, hl*0.95);
+  ctx.lineTo(-hw*0.6, hl*0.95);
+  ctx.lineTo(-hw*0.95, hl*0.55);
+  ctx.lineTo(-hw*0.85, hl*0.35);
+  ctx.bezierCurveTo(-hw,-hl*0.7, -hw*0.9,-hl*0.7, 0,-hl);
+  ctx.closePath();
   ctx.fill();
   ctx.restore();
 }
@@ -125,16 +162,17 @@ function drawCar(){
   ctx.rotate(car.heading);
   const pxLen = CAR.length, pxWid = CAR.width;
 
-  // мягкая тень под машиной (радиальный градиент, дёшево по производительности)
-  const shadowDy = pxLen*0.06;
-  const shadowR = Math.max(pxWid,pxLen)*0.62;
-  const shGrad = ctx.createRadialGradient(0, shadowDy, 0, 0, shadowDy, shadowR);
-  shGrad.addColorStop(0, 'rgba(0,0,0,0.40)');
-  shGrad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = shGrad;
-  ctx.beginPath();
-  ctx.ellipse(0, shadowDy, pxWid*0.62, pxLen*0.48, 0, 0, Math.PI*2);
-  ctx.fill();
+  // тень по форме текстуры: смещена вниз/в сторону от солнца и слегка размыта
+  const shDx = pxLen*0.025, shDy = pxLen*0.06;
+  ctx.save();
+  ctx.translate(shDx, shDy);
+  try{ ctx.filter = 'blur(0.05px)'; }catch(e){}
+  if(carImgOk && carShadowCanvas){
+    ctx.drawImage(carShadowCanvas, -pxWid/2, -pxLen/2, pxWid, pxLen);
+  } else {
+    drawPlaceholderSilhouette(pxLen, pxWid);
+  }
+  ctx.restore();
 
   if(carImgOk){
     ctx.drawImage(carImg, -pxWid/2, -pxLen/2, pxWid, pxLen);
