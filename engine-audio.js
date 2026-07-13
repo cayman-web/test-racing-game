@@ -6,14 +6,18 @@
    - ex_rev.wav   — один непрерывный "разгон" двигателя от холостых до
                     отсечки (реальная запись, ~9-10 сек)
 
-   Подход: idle играется лупом всегда. rev.wav НЕ просто питчится — вместо
-   этого мы держим "виртуальную позицию" воспроизведения внутри записи,
-   которая соответствует текущим оборотам (линейная развёртка idle->redline
-   вдоль длины файла). Когда обороты меняются, мы плавно (кроссфейдом)
-   перезапускаем сэмпл в нужной точке, слегка подстраивая playbackRate,
-   чтобы звук "догонял" нужное место без резких скачков.
+   ПОДХОД (многополосное смешивание, как в большинстве гоночных игр):
+   вместо того чтобы перематывать rev.wav туда-сюда вслед за оборотами
+   (это давало "волну" при скачках RPM из-за виртуальной коробки передач),
+   вырезаем из записи 3 коротких зацикленных фрагмента, примерно
+   соответствующих низким/средним/высоким оборотам, и держим их играющими
+   ПОСТОЯННО. По факту меняются только:
+   - громкость каждой полосы (треугольный кроссфейд по текущим оборотам)
+   - высота тона каждой полосы (playbackRate, чтобы плавно дотягивать
+     частоту до реальных оборотов между соседними полосами)
 
-   Громкость idle и rev кроссфейдятся между собой по текущим оборотам.
+   Никаких перезапусков/перемоток по ходу игры - только плавное смешивание
+   уже играющих лупов. Это убирает и "щелчки", и "волну".
    ========================================================================= */
 (function(){
 "use strict";
@@ -31,7 +35,7 @@ master.connect(actx.destination);
 const IDLE_URL = 'ex_idle.wav';
 const REV_URL  = 'ex_rev.wav';
 
-let idleBuffer = null, revBuffer = null, ready = false;
+let ready = false;
 
 async function loadBuffer(url){
   const res = await fetch(url);
@@ -40,15 +44,16 @@ async function loadBuffer(url){
 }
 
 Promise.all([loadBuffer(IDLE_URL), loadBuffer(REV_URL)])
-  .then(([ib, rb])=>{
-    idleBuffer = ib; revBuffer = rb; ready = true;
-    startIdleLoop();
+  .then(([idleBuffer, revBuffer])=>{
+    startIdleLoop(idleBuffer);
+    startRevBands(revBuffer);
+    ready = true;
   })
   .catch(e=>{ console.warn('Engine audio: не удалось загрузить звуки', e); });
 
 /* ---- IDLE: простой бесконечный луп ---- */
 let idleGain = null;
-function startIdleLoop(){
+function startIdleLoop(idleBuffer){
   idleGain = actx.createGain();
   idleGain.gain.value = 1;
   idleGain.connect(master);
@@ -59,91 +64,56 @@ function startIdleLoop(){
   src.start();
 }
 
-/* ---- REV: сэмпл с "виртуальной головкой", привязанной к оборотам ---- */
-let revGain = null;
-let revSrc = null;
-let revSrcStartCtxTime = 0;
-let revSrcStartOffset = 0;
+/* ---- REV: несколько параллельных зацикленных полос ---- */
+// Центры полос (в долях от диапазона холостые->отсечка, он же условно
+// доля длины rev.wav - предполагаем, что запись развёрнута линейно).
+const BAND_CENTERS = [0.34, 0.67, 1.0];
+const BAND_SPACING = 0.33; // шаг между центрами - используется для треугольного кроссфейда
+const LOOP_HALF_WINDOW = 0.35; // сек, половина длины зацикленного фрагмента вокруг центра
 
-const RETRIGGER_MIN_INTERVAL = 0.15; // сек - не чаще проверяем, не нужна ли жёсткая коррекция
-const DRIFT_TOLERANCE = 1.4;         // сек - насколько позволяем разъехаться (плавный разгон/спад
-                                      // должен полностью гаситься через playbackRate ниже; жёсткая
-                                      // перемотка нужна только на резкий скачок, напр. переключение передачи)
-const CROSSFADE = 0.08;              // сек - длительность кроссфейда при жёсткой коррекции
-let lastRetrigger = 0;
+let bands = []; // {src, gain, center}
 
-function ensureRevGain(){
-  if(revGain) return;
-  revGain = actx.createGain();
-  revGain.gain.value = 0;
-  revGain.connect(master);
-}
+function startRevBands(revBuffer){
+  const dur = revBuffer.duration;
+  bands = BAND_CENTERS.map(c=>{
+    const center = c * (dur - 0.1);
+    const loopStart = Math.max(0, center - LOOP_HALF_WINDOW);
+    const loopEnd = Math.min(dur, center + LOOP_HALF_WINDOW);
 
-function currentSourcePos(){
-  if(!revSrc) return 0;
-  return revSrcStartOffset + (actx.currentTime - revSrcStartCtxTime);
-}
+    const gain = actx.createGain();
+    gain.gain.value = 0;
+    gain.connect(master);
 
-function triggerRevSource(offset){
-  ensureRevGain();
-  const now = actx.currentTime;
-  const clampedOffset = Math.max(0, Math.min(revBuffer.duration - 0.05, offset));
+    const src = actx.createBufferSource();
+    src.buffer = revBuffer;
+    src.loop = true;
+    src.loopStart = loopStart;
+    src.loopEnd = loopEnd;
+    src.connect(gain);
+    src.start(0, loopStart);
 
-  const newSrc = actx.createBufferSource();
-  newSrc.buffer = revBuffer;
-  newSrc.loop = false; // виртуальная позиция сама себя переустанавливает, зацикливать не нужно
-
-  const g = actx.createGain();
-  g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(1, now + CROSSFADE);
-  newSrc.connect(g);
-  g.connect(revGain);
-  newSrc.start(now, clampedOffset);
-
-  if(revSrc && revSrc._gainNode){
-    const oldGain = revSrc._gainNode;
-    const oldSrc = revSrc;
-    oldGain.gain.cancelScheduledValues(now);
-    oldGain.gain.setValueAtTime(oldGain.gain.value, now);
-    oldGain.gain.linearRampToValueAtTime(0, now + CROSSFADE);
-    setTimeout(()=>{ try{ oldSrc.stop(); }catch(e){} }, (CROSSFADE+0.03)*1000);
-  }
-
-  newSrc._gainNode = g;
-  revSrc = newSrc;
-  revSrcStartCtxTime = now;
-  revSrcStartOffset = clampedOffset;
+    return { src, gain, center: c };
+  });
 }
 
 /* ---- Вызывается каждый кадр из main.js (updateHud) ---- */
 window.updateEngineAudio = function(rpm, idleRpm, redlineRpm){
   if(!ready) return;
   const frac = Math.max(0, Math.min(1, (rpm - idleRpm) / (redlineRpm - idleRpm)));
-
-  // Целевая позиция внутри rev.wav (предполагаем линейную развёртку записи)
-  const targetPos = frac * (revBuffer.duration - 0.1);
-
   const now = actx.currentTime;
-  if(now - lastRetrigger > RETRIGGER_MIN_INTERVAL){
-    lastRetrigger = now;
-    const drift = Math.abs(currentSourcePos() - targetPos);
-    if(!revSrc || drift > DRIFT_TOLERANCE){
-      triggerRevSource(targetPos);
-    }
-  }
 
-  // Кроссфейд громкости idle <-> rev по оборотам (без резкого порога)
-  const revVol = Math.min(1, frac * 1.35);
+  // Громкость idle плавно уходит по мере роста оборотов
   const idleVol = Math.max(0, 1 - frac * 1.6);
-  if(revGain)  revGain.gain.setTargetAtTime(revVol, now, 0.05);
-  if(idleGain) idleGain.gain.setTargetAtTime(idleVol, now, 0.05);
+  if(idleGain) idleGain.gain.setTargetAtTime(idleVol, now, 0.06);
 
-  // Небольшая подстройка playbackRate, чтобы звук плавно "догонял" нужную
-  // точку записи между перезапусками (сглаживает мелкие рассинхронизации)
-  if(revSrc){
-    const err = targetPos - currentSourcePos();
-    const rate = Math.max(0.55, Math.min(1.8, 1 + err*0.6));
-    revSrc.playbackRate.setTargetAtTime(rate, now, 0.1);
+  // Каждая полоса rev.wav: треугольный вес по близости к своему центру +
+  // подстройка высоты тона, чтобы соседние полосы сходились по частоте
+  // на границе кроссфейда (rate = frac/center)
+  for(const b of bands){
+    const weight = Math.max(0, 1 - Math.abs(frac - b.center) / BAND_SPACING);
+    const rate = Math.max(0.4, Math.min(2.2, frac / b.center));
+    b.gain.gain.setTargetAtTime(weight, now, 0.06);
+    b.src.playbackRate.setTargetAtTime(rate, now, 0.08);
   }
 };
 
