@@ -65,9 +65,11 @@ let revSrc = null;
 let revSrcStartCtxTime = 0;
 let revSrcStartOffset = 0;
 
-const RETRIGGER_MIN_INTERVAL = 0.12; // сек - не чаще перезапускаем позицию
-const DRIFT_TOLERANCE = 0.25;        // сек - насколько позволяем разъехаться до коррекции
-const CROSSFADE = 0.05;              // сек - длительность кроссфейда при коррекции
+const RETRIGGER_MIN_INTERVAL = 0.15; // сек - не чаще проверяем, не нужна ли жёсткая коррекция
+const DRIFT_TOLERANCE = 1.4;         // сек - насколько позволяем разъехаться (плавный разгон/спад
+                                      // должен полностью гаситься через playbackRate ниже; жёсткая
+                                      // перемотка нужна только на резкий скачок, напр. переключение передачи)
+const CROSSFADE = 0.08;              // сек - длительность кроссфейда при жёсткой коррекции
 let lastRetrigger = 0;
 
 function ensureRevGain(){
@@ -140,8 +142,8 @@ window.updateEngineAudio = function(rpm, idleRpm, redlineRpm){
   // точку записи между перезапусками (сглаживает мелкие рассинхронизации)
   if(revSrc){
     const err = targetPos - currentSourcePos();
-    const rate = Math.max(0.75, Math.min(1.35, 1 + err*1.5));
-    revSrc.playbackRate.setTargetAtTime(rate, now, 0.08);
+    const rate = Math.max(0.55, Math.min(1.8, 1 + err*0.6));
+    revSrc.playbackRate.setTargetAtTime(rate, now, 0.1);
   }
 };
 
