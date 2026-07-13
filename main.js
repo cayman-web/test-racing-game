@@ -43,6 +43,74 @@ document.getElementById('zoomIn').addEventListener('pointerdown', e=>{ e.prevent
 document.getElementById('zoomOut').addEventListener('pointerdown', e=>{ e.preventDefault(); setZoom(ZOOM*0.87); });
 
 /* =========================================================================
+   ГЕЙМПАД (Bluetooth-контроллер, подключённый к телефону/компьютеру)
+   Safari на iOS (в т.ч. в установленном PWA) поддерживает Gamepad API
+   начиная с iOS 13 - MFi/Bluetooth-контроллеры (Xbox, PlayStation и т.д.)
+   читаются напрямую, без плагинов и настроек.
+   ========================================================================= */
+const padIndicator = document.getElementById('padIndicator');
+const steerCtrlEl = document.getElementById('steerCtrl');
+const pedalCtrlEl = document.getElementById('pedalCtrl');
+
+window.addEventListener('gamepadconnected', ()=>{ padIndicator.style.opacity = '1'; });
+window.addEventListener('gamepaddisconnected', ()=>{ padIndicator.style.opacity = '0'; setControlSource('touch'); });
+
+// Источник управления: 'touch' - показаны кнопки на экране, 'gamepad' - кнопки
+// плавно прячутся, т.к. рулят стиком/триггерами и они только мешают на экране.
+// Стартовый режим берём из настроек (страница settings.html), по умолчанию - экран.
+let controlSource = 'touch';
+function setControlSource(src){
+  if(controlSource===src) return;
+  controlSource = src;
+  const faded = (src==='gamepad');
+  steerCtrlEl.classList.toggle('faded', faded);
+  pedalCtrlEl.classList.toggle('faded', faded);
+}
+try{
+  if(localStorage.getItem('gt3_controlPref')==='gamepad'){ setControlSource('gamepad'); }
+}catch(e){}
+// Любое касание экрана - мгновенно возвращаем кнопки (человек снова играет пальцами)
+window.addEventListener('touchstart', ()=>setControlSource('touch'), {passive:true});
+
+const input = { steer:0, throttle:0, brake:0 };
+
+function pollInput(){
+  // База: клавиатура и тач-кнопки (цифровой ввод, уже пишут в keys)
+  let steer = (keys['KeyA']||keys['ArrowLeft'] ? -1:0) + (keys['KeyD']||keys['ArrowRight'] ? 1:0);
+  let throttle = (keys['KeyW']||keys['ArrowUp']) ? 1 : 0;
+  let brake = (keys['KeyS']||keys['ArrowDown']) ? 1 : 0;
+
+  // Геймпад, если подключён, перекрывает аналоговым вводом (стик/триггеры)
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for(const gp of pads){
+    if(!gp) continue;
+    padIndicator.style.opacity = '1';
+    const axisX = gp.axes[0] || 0;
+    if(Math.abs(axisX) > 0.08) steer = Math.max(-1, Math.min(1, axisX));
+    // Стандартный маппинг (Xbox/PlayStation): buttons[7] = правый триггер (газ),
+    // buttons[6] = левый триггер (тормоз). Если у контроллера их нет - используем A/X (0) и B/Круг (1).
+    const rt = gp.buttons[7] ? gp.buttons[7].value : 0;
+    const lt = gp.buttons[6] ? gp.buttons[6].value : 0;
+    const aBtn = gp.buttons[0] ? gp.buttons[0].value : 0;
+    const bBtn = gp.buttons[1] ? gp.buttons[1].value : 0;
+    const gpThrottle = Math.max(rt, aBtn);
+    const gpBrake = Math.max(lt, bBtn);
+    if(gpThrottle > 0.05) throttle = gpThrottle;
+    if(gpBrake > 0.05) brake = gpBrake;
+
+    // Реальная активность геймпада (не просто "подключён", а реально трогают) -
+    // прячем экранные кнопки. Небольшой дедзон, чтобы дрейф стика не считался вводом.
+    const anyButtonPressed = gp.buttons.some(b=>b.pressed || b.value>0.06);
+    if(Math.abs(axisX)>0.12 || anyButtonPressed){
+      setControlSource('gamepad');
+    }
+    break; // берём первый подключённый геймпад
+  }
+
+  input.steer = steer; input.throttle = throttle; input.brake = brake;
+}
+
+/* =========================================================================
    КОСМЕТИЧЕСКАЯ СИМУЛЯЦИЯ ПЕРЕДАЧ/ОБОРОТОВ (на физику не влияет)
    6-ступенчатая последовательная КПП. Пять переходов между передачами:
    1->2: 108-113 км/ч, 2->3: 140-143, 3->4: 170-174, 4->5: 209-212, 5->6: 240-242.
@@ -142,6 +210,7 @@ function loop(now){
   let dt = (now-lastT)/1000;
   lastT = now;
   dt = Math.min(dt, 0.033); // защита от скачков при потере фокуса вкладки
+  pollInput();
   update(dt);
   render();
   updateHud();

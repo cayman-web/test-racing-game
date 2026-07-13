@@ -23,6 +23,37 @@ const CAR = {
 const AIR_RHO = 1.225;
 const G = 9.81;
 
+/* =========================================================================
+   ПАМЯТЬ ИГРЫ: последняя трасса/машина + статистика пилота (localStorage,
+   переживает закрытие вкладки/приложения). Сейчас трасса и машина всегда
+   одни и те же, но структура уже готова под несколько трасс/машин в будущем -
+   тогда просто CURRENT_TRACK/CURRENT_CAR будут выбираться на экране Drive.
+   ========================================================================= */
+const CURRENT_TRACK = { id: 'sketch-circuit-01', name: 'Sketch Circuit' };
+const CURRENT_CAR   = { id: 'porsche-992-gt3r',  name: 'Porsche 992 GT3 R' };
+try{
+  localStorage.setItem('gt3_lastTrack', JSON.stringify(CURRENT_TRACK));
+  localStorage.setItem('gt3_lastCar', JSON.stringify(CURRENT_CAR));
+}catch(e){}
+
+const STATS_KEY = 'gt3_stats';
+function loadStats(){
+  const base = { totalLaps:0, cleanLaps:0, dirtyLaps:0, totalKm:0 };
+  try{
+    const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
+    if(raw) return Object.assign(base, raw);
+  }catch(e){}
+  return base;
+}
+const stats = loadStats();
+let statsDirty = false;
+function saveStats(){
+  try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){}
+  statsDirty = false;
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && statsDirty) saveStats(); });
+window.addEventListener('pagehide', ()=>{ if(statsDirty) saveStats(); });
+
 // Закрутка от пробуксовки на траве (не связана с рулением, накапливается стихийно)
 let grassSpin = 0;
 
@@ -69,12 +100,17 @@ function fmtTime(t){
    ЦИКЛ ОБНОВЛЕНИЯ ФИЗИКИ
    ========================================================================= */
 function update(dt){
-  const steer = (keys['KeyA']||keys['ArrowLeft'] ? -1:0) + (keys['KeyD']||keys['ArrowRight'] ? 1:0);
-  const throttle = (keys['KeyW']||keys['ArrowUp']) ? 1 : 0;
-  const brake = (keys['KeyS']||keys['ArrowDown']) ? 1 : 0;
+  const steer = input.steer;      // -1..1, аналоговый со стика геймпада или -1/0/1 с клавиатуры/тач-кнопок
+  const throttle = input.throttle; // 0..1
+  const brake = input.brake;       // 0..1
 
   const v = car.speed;
   const speedAbs = Math.abs(v);
+
+  // Статистика пилота: суммарный пробег (в реальности едешь - счётчик крутится,
+  // независимо от того, по трассе ты или свернул в траву)
+  stats.totalKm += speedAbs*dt/1000;
+  statsDirty = true;
 
   // Насколько глубоко машина съехала с асфальта: 0 = на трассе, 1 = глубоко в траве
   const near0 = nearestIndex(car.x, car.y);
@@ -165,6 +201,9 @@ function update(dt){
   if(frac>0.4 && frac<0.6) lap.checkpointPassed = true;
   if(lap.lastFrac>0.85 && frac<0.15 && lap.checkpointPassed){
     if(!lap.invalid && (lap.best===null || lap.currentT<lap.best)) lap.best = lap.currentT;
+    stats.totalLaps++;
+    if(lap.invalid) stats.dirtyLaps++; else stats.cleanLaps++;
+    saveStats();
     lap.count++;
     lap.currentT = 0;
     lap.checkpointPassed = false;

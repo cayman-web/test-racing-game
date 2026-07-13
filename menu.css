@@ -1,0 +1,65 @@
+:root{
+  --bg:#0a0a0c;
+  --panel:#111114;
+  --panel-edge:#232327;
+  --grello:#d7e600;
+  --grello-dim:#7d8600;
+  --warn:#ff3b30;
+  --text:#e7e7ea;
+  --text-dim:#7a7a82;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;
+  font-family:-apple-system,"SF Pro Text",Arial,sans-serif;-webkit-user-select:none;user-select:none;}
+
+/* ---- Главное меню ---- */
+#menuRoot{display:flex;gap:14px;height:100%;
+  padding:calc(14px + var(--safe-t)) calc(14px + var(--safe-r)) calc(14px + var(--safe-b)) calc(14px + var(--safe-l));}
+.tile-col{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0;}
+
+.tile{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--panel-edge);
+  background:linear-gradient(180deg,#141416,#0c0c0e);text-decoration:none;color:var(--text);
+  display:flex;align-items:flex-end;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  transition:transform .12s ease, filter .12s ease;}
+.tile:active{transform:scale(0.97);filter:brightness(1.08);}
+.tile-drive{flex:1.35;}
+.tile-stats, .tile-settings{flex:1;}
+
+#trackBgImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:.5;filter:brightness(.5) saturate(.7);}
+#driveThumb{position:absolute;inset:0;width:100%;height:100%;}
+#driveCarImg{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
+  max-width:56%;max-height:50%;object-fit:contain;
+  filter:drop-shadow(0 12px 16px rgba(0,0,0,.6));opacity:.94;}
+
+.tileLabel{position:relative;z-index:2;}
+.tileTitle{font-family:"SF Mono","Consolas",monospace;font-weight:800;letter-spacing:2px;
+  color:var(--grello);text-shadow:0 0 16px rgba(215,230,0,.3);font-size:28px;}
+.tile-stats .tileTitle, .tile-settings .tileTitle{font-size:17px;}
+.tileSub{font-size:12px;color:var(--text-dim);margin-top:4px;position:relative;z-index:2;}
+
+/* ---- Внутренние страницы (statistics / settings) ---- */
+#pageRoot{height:100%;padding:calc(20px + var(--safe-t)) calc(20px + var(--safe-r)) calc(20px + var(--safe-b)) calc(20px + var(--safe-l));
+  color:var(--text);overflow-y:auto;}
+.backLink{display:inline-block;color:var(--text-dim);text-decoration:none;font-size:13px;
+  border:1px solid var(--panel-edge);border-radius:8px;padding:6px 12px;margin-bottom:18px;}
+.backLink:active{color:var(--grello);}
+#pageRoot h1{font-family:"SF Mono","Consolas",monospace;font-size:20px;letter-spacing:2px;
+  color:var(--grello);margin:0 0 18px;}
+
+.statGrid{display:flex;gap:14px;flex-wrap:wrap;}
+.statCard{flex:1;min-width:140px;background:linear-gradient(180deg,var(--panel),#0c0c0e);
+  border:1px solid var(--panel-edge);border-radius:14px;padding:16px;text-align:center;}
+.statVal{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:30px;color:var(--grello);}
+.statLbl{font-size:12px;color:var(--text-dim);margin-top:6px;}
+
+.settingBlock{margin-bottom:20px;}
+.settingLabel{font-size:13px;color:var(--text-dim);margin-bottom:10px;}
+.optionRow{display:flex;gap:12px;}
+.optBtn{flex:1;pointer-events:auto;font-family:-apple-system,Arial,sans-serif;font-size:14px;font-weight:600;
+  color:var(--text);background:#1c1c20;border:1px solid var(--panel-edge);border-radius:12px;padding:16px 10px;}
+.optBtn.active{background:var(--grello);color:#111;border-color:var(--grello);}

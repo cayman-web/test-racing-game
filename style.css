@@ -56,7 +56,10 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
 
 /* ---- Тач-контролы ---- */
 .ctrlPanel{display:flex;gap:9px;padding:9px;background:rgba(17,17,20,.55);
-  border:1px solid var(--panel-edge);backdrop-filter:blur(4px);}
+  border:1px solid var(--panel-edge);backdrop-filter:blur(4px);
+  transition:opacity .35s ease;}
+.ctrlPanel.faded{opacity:0;pointer-events:none;}
+.ctrlPanel.faded .ctrlBtn{pointer-events:none;}
 .ctrlBtn{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;
   border:1px solid var(--panel-edge);border-radius:14px;background:#1c1c20;color:var(--text);
   font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:14px;letter-spacing:.5px;
@@ -70,6 +73,15 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
 
 #zoomCtrl{right:calc(16px + var(--safe-r));top:calc(16px + var(--safe-t));flex-direction:column;}
 #zoomCtrl .ctrlBtn{width:42px;height:42px;font-size:21px;}
+
+#padIndicator{left:calc(10px + var(--safe-l));top:calc(34px + var(--safe-t));
+  font-size:16px;opacity:0;transition:opacity .3s;}
+
+#backToMenu{left:calc(10px + var(--safe-l));top:calc(8px + var(--safe-t));
+  font-size:10px;color:var(--text-dim);text-decoration:none;pointer-events:auto;
+  background:rgba(17,17,20,.55);border:1px solid var(--panel-edge);border-radius:6px;
+  padding:3px 7px;letter-spacing:.5px;}
+#backToMenu:active{color:var(--grello);}
 
 #steerCtrl{left:calc(30px + var(--safe-l));bottom:calc(20px + var(--safe-b));}
 #pedalCtrl{right:calc(30px + var(--safe-r));bottom:calc(20px + var(--safe-b));}
