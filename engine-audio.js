@@ -68,14 +68,40 @@ function startIdleLoop(idleBuffer){
 // Центры полос (в долях от диапазона холостые->отсечка, он же условно
 // доля длины rev.wav - предполагаем, что запись развёрнута линейно).
 const BAND_CENTERS = [0.34, 0.67, 1.0];
-const BAND_SPACING = 0.33; // шаг между центрами - используется для треугольного кроссфейда
+// Границы переключения между соседними полосами - ровно посередине между их центрами
+const BOUNDARIES = [ (BAND_CENTERS[0]+BAND_CENTERS[1])/2, (BAND_CENTERS[1]+BAND_CENTERS[2])/2 ];
+const BOUNDARY_HALF_WIDTH = 0.03; // насколько узкая зона перехода вокруг границы (было широкое
+                                   // перекрытие почти по всему диапазону - от него и были биения:
+                                   // две копии одной и той же записи на близкой высоте тона играли
+                                   // одновременно почти всегда. Теперь одновременно звучат две полосы
+                                   // только на узком стыке.)
 const LOOP_HALF_WINDOW = 0.35; // сек, половина длины зацикленного фрагмента вокруг центра
+
+function smoothStep(edge0, edge1, x){
+  const t = Math.max(0, Math.min(1, (x-edge0)/(edge1-edge0)));
+  return t*t*(3-2*t);
+}
+
+// Вес полосы i: 1 почти везде в своей зоне, плавно уходит в 0 только у границ
+// с соседями (узкая зона в BOUNDARY_HALF_WIDTH*2 шириной)
+function bandWeight(i, frac){
+  let gateLow = 1, gateHigh = 1;
+  if(i>0){
+    const b = BOUNDARIES[i-1];
+    gateLow = smoothStep(b-BOUNDARY_HALF_WIDTH, b+BOUNDARY_HALF_WIDTH, frac);
+  }
+  if(i<BAND_CENTERS.length-1){
+    const b = BOUNDARIES[i];
+    gateHigh = 1 - smoothStep(b-BOUNDARY_HALF_WIDTH, b+BOUNDARY_HALF_WIDTH, frac);
+  }
+  return gateLow*gateHigh;
+}
 
 let bands = []; // {src, gain, center}
 
 function startRevBands(revBuffer){
   const dur = revBuffer.duration;
-  bands = BAND_CENTERS.map(c=>{
+  bands = BAND_CENTERS.map((c, idx)=>{
     const center = c * (dur - 0.1);
     const loopStart = Math.max(0, center - LOOP_HALF_WINDOW);
     const loopEnd = Math.min(dur, center + LOOP_HALF_WINDOW);
@@ -92,7 +118,7 @@ function startRevBands(revBuffer){
     src.connect(gain);
     src.start(0, loopStart);
 
-    return { src, gain, center: c };
+    return { src, gain, center: c, idx };
   });
 }
 
@@ -106,14 +132,14 @@ window.updateEngineAudio = function(rpm, idleRpm, redlineRpm){
   const idleVol = Math.max(0, 1 - frac * 1.6);
   if(idleGain) idleGain.gain.setTargetAtTime(idleVol, now, 0.06);
 
-  // Каждая полоса rev.wav: треугольный вес по близости к своему центру +
-  // подстройка высоты тона, чтобы соседние полосы сходились по частоте
-  // на границе кроссфейда (rate = frac/center)
+  // Каждая полоса rev.wav: почти всегда активна только одна (узкое
+  // переключение у границ) + подстройка высоты тона, чтобы соседние полосы
+  // сходились по частоте на стыке (rate = frac/center)
   for(const b of bands){
-    const weight = Math.max(0, 1 - Math.abs(frac - b.center) / BAND_SPACING);
+    const weight = bandWeight(b.idx, frac);
     const rate = Math.max(0.4, Math.min(2.2, frac / b.center));
-    b.gain.gain.setTargetAtTime(weight, now, 0.22);
-    b.src.playbackRate.setTargetAtTime(rate, now, 0.28);
+    b.gain.gain.setTargetAtTime(weight, now, 0.12);
+    b.src.playbackRate.setTargetAtTime(rate, now, 0.2);
   }
 };
 
