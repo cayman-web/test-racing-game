@@ -30,14 +30,12 @@ function gripAccel(v){ // м/с^2, растёт с прижимной силой
   const f = Math.min(Math.abs(v)/CAR.vmax, 1);
   return 17 + 9*f*f; // ~1.73g на малой скорости -> ~2.65g на максималке (руление ещё агрессивнее)
 }
-// Доп. бонус к поворотливости в диапазоне 0-130 км/ч (0-36 м/с): на этих скоростях
-// машина должна рулиться заметно охотнее, выше 130 км/ч бонус исчезает.
+// Бонус к поворотливости, плавно и процентно зависящий от скорости: на малой
+// скорости руление максимально острое, чем ближе к максималке - тем сложнее
+// повернуть (реалистичный эффект прижимной силы/инерции, без резких порогов).
 function turnAssist(v){
-  const a = Math.abs(v);
-  if(a>=36) return 1.0;
-  if(a<=20) return 1.8;
-  const t = (a-20)/(36-20);
-  return 1.8 + (1.0-1.8)*t;
+  const f = Math.min(Math.abs(v)/CAR.vmax, 1); // 0 на месте -> 1 на максималке
+  return 1 + 1.6*Math.pow(1-f, 1.6); // ~2.6x на месте, плавно спадает к 1.0x на максималке
 }
 function brakeDecel(v){
   const f = Math.min(Math.abs(v)/CAR.vmax, 1);
@@ -55,11 +53,11 @@ function resetCar(){
   car.x = CENTER[0][0]; car.y = CENTER[0][1];
   car.heading = Math.atan2(TAN[0][0], -TAN[0][1]);
   car.speed = 0;
-  lap.currentT = 0; lap.checkpointPassed = false;
+  lap.currentT = 0; lap.checkpointPassed = false; lap.invalid = false;
 }
 
 /* ---- Круги/время ---- */
-const lap = { count:1, currentT:0, best:null, checkpointPassed:false, lastFrac:0 };
+const lap = { count:1, currentT:0, best:null, checkpointPassed:false, lastFrac:0, invalid:false };
 
 function fmtTime(t){
   const m = Math.floor(t/60);
@@ -83,6 +81,12 @@ function update(dt){
   const grassPenalty = Math.max(0, Math.min(1, (near0.dist - HALF_W) / 6));
   const onTrackFactor = 1 - 0.45*grassPenalty; // на траве сцепление слабее, но не нулевое - зацеп в жизни есть
   car.onTrack = onTrackFactor;
+
+  // Лимиты трассы: небольшой допуск за кромку асфальта (как бордюр), дальше - нарушение,
+  // текущий круг не будет засчитан как быстрый (но продолжаем ехать как обычно)
+  if(near0.dist > HALF_W + 0.5){
+    lap.invalid = true;
+  }
 
   // Тяга (ограничена и мощностью, и сцеплением), едет только вперёд от газа
   let force = 0;
@@ -128,6 +132,14 @@ function update(dt){
     let yawRate = (car.speed/radius)*Math.sign(steer);
     yawRate = Math.max(-maxYawRate, Math.min(maxYawRate, yawRate));
     car.heading += yawRate*dt;
+
+    // Реальная потеря скорости в повороте: чем сильнее машина реально "грузит"
+    // шины боковым ускорением, тем больше она теряет в скорости - как в жизни,
+    // прямая всегда быстрее поворота на той же тяге.
+    const CORNER_DRAG_COEF = 0.12;
+    const lateralAccel = Math.abs(car.speed*yawRate);
+    const corneringLoss = Math.min(CORNER_DRAG_COEF*lateralAccel*dt, Math.abs(car.speed));
+    car.speed -= Math.sign(car.speed)*corneringLoss;
   }
 
   // Пробуксовка на траве: если сильно газовать при слабом сцеплении, машину
@@ -152,10 +164,11 @@ function update(dt){
   const frac = near0.idx/N;
   if(frac>0.4 && frac<0.6) lap.checkpointPassed = true;
   if(lap.lastFrac>0.85 && frac<0.15 && lap.checkpointPassed){
-    if(lap.best===null || lap.currentT<lap.best) lap.best = lap.currentT;
+    if(!lap.invalid && (lap.best===null || lap.currentT<lap.best)) lap.best = lap.currentT;
     lap.count++;
     lap.currentT = 0;
     lap.checkpointPassed = false;
+    lap.invalid = false;
   }
   lap.lastFrac = frac;
   lap.currentT += dt;

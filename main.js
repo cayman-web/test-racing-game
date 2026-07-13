@@ -126,7 +126,9 @@ function updateHud(){
   document.getElementById('speedSmall').innerHTML = Math.round(kmh) + '<span> км/ч</span>';
 
   document.getElementById('lapCount').textContent = lap.count;
-  document.getElementById('curLap').textContent = fmtTime(lap.currentT);
+  const curLapEl = document.getElementById('curLap');
+  curLapEl.textContent = fmtTime(lap.currentT);
+  curLapEl.style.color = lap.invalid ? 'var(--warn)' : '';
   document.getElementById('bestLap').textContent = lap.best===null ? '—' : fmtTime(lap.best);
 
   document.getElementById('offtrack').style.opacity = car.onTrack<0.85 ? '1':'0';
