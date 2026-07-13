@@ -112,8 +112,8 @@ window.updateEngineAudio = function(rpm, idleRpm, redlineRpm){
   for(const b of bands){
     const weight = Math.max(0, 1 - Math.abs(frac - b.center) / BAND_SPACING);
     const rate = Math.max(0.4, Math.min(2.2, frac / b.center));
-    b.gain.gain.setTargetAtTime(weight, now, 0.06);
-    b.src.playbackRate.setTargetAtTime(rate, now, 0.08);
+    b.gain.gain.setTargetAtTime(weight, now, 0.22);
+    b.src.playbackRate.setTargetAtTime(rate, now, 0.28);
   }
 };
 
