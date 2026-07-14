@@ -188,8 +188,6 @@ function updateHud(){
     gearLabel = sim.gear; rpmVal = sim.rpm;
   }
 
-  window.updateEngineAudio && window.updateEngineAudio(rpmVal, IDLE_RPM, REV_LIMITER_RPM);
-
   document.getElementById('gearBig').textContent = gearLabel;
   document.getElementById('rpmNum').textContent = Math.round(rpmVal);
   document.getElementById('rpmFill').style.width = Math.max(0,Math.min(100, (rpmVal-IDLE_RPM)/(9000-IDLE_RPM)*100)) + '%';
