@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>GT3 RACER — Выбор машины</title>
+<link rel="stylesheet" href="menu.css">
+<style>
+  #pageRoot{display:flex;flex-direction:column;}
+  #carGrid{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;}
+  .carTile{position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--panel-edge);
+    background:linear-gradient(180deg,#141416,#0c0c0e);text-decoration:none;color:var(--text);
+    width:220px;height:170px;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;
+    box-shadow:0 8px 22px rgba(0,0,0,.45);transition:transform .12s ease, filter .12s ease;}
+  .carTile:active{transform:scale(0.97);filter:brightness(1.08);}
+  .carTile img{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+    max-width:70%;max-height:60%;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.6));}
+  .carTile .info{position:relative;z-index:2;}
+  .carTile .cName{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:14px;
+    color:var(--grello);text-shadow:0 0 12px rgba(215,230,0,.3);line-height:1.3;}
+  .carTile .cMeta{font-size:10px;color:var(--text-dim);margin-top:4px;}
+  .carTile.current{border-color:var(--grello);}
+  .currentBadge{position:absolute;top:8px;right:8px;z-index:2;font-size:9px;letter-spacing:1px;
+    color:#111;background:var(--grello);border-radius:5px;padding:2px 6px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="pageRoot">
+  <a href="index.html" class="backLink">‹ меню</a>
+  <h1>ВЫБОР МАШИНЫ</h1>
+  <div id="carGrid"></div>
+</div>
+<script src="cars.js"></script>
+<script src="car-select.js"></script>
+</body>
+</html>

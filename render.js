@@ -25,7 +25,7 @@ window.addEventListener('wheel', e=>{
 
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
-/* ---- Спрайт машины: car.png (нос смотрит вверх/на север) с запасным силуэтом ---- */
+/* ---- Спрайт машины: файл текстуры зависит от выбранной машины (нос смотрит вверх/на север), с запасным силуэтом ---- */
 const carImg = new Image();
 let carImgOk = false;
 let carShadowCanvas = null; // силуэт текстуры (по альфа-каналу) для отрисовки тени по форме машины
@@ -47,7 +47,7 @@ function buildCarShadow(){
 
 carImg.onload = ()=>{ carImgOk = true; buildCarShadow(); };
 carImg.onerror = ()=>{ carImgOk = false; carShadowCanvas = null; };
-carImg.src = 'car.png';
+carImg.src = CAR_DEF.texture;
 
 function drawPlaceholderCar(pxLen, pxWid){
   ctx.save();

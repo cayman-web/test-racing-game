@@ -1,36 +1,26 @@
 /* =========================================================================
-   ФИЗИКА АВТОМОБИЛЯ — Porsche 911 (992) GT3 R
-   Точечная масса + тяга (ограничена мощностью/сцеплением), аэродинамика,
-   сцепление зависящее от скорости (эффект прижимной силы). Без честного
-   заноса — по договорённости "не грузим физику сильно".
+   ФИЗИКА АВТОМОБИЛЯ
+   Векторная модель: скорость хранится как мировой вектор (car.vx, car.vy),
+   отдельно от направления кузова (car.heading). Раньше машина ехала строго
+   туда, куда повёрнут нос (без честного заноса) - теперь руление вращает
+   курс, а СКОРОСТЬ по инерции продолжает двигаться в старом направлении,
+   пока сцепление шин постепенно не "догонит" её до нового курса. На асфальте
+   это происходит почти мгновенно (не отличить от прежнего поведения), а вот
+   на траве/гравии сцепления не хватает - и машину реально сносит юзом,
+   не просто крутит на месте.
 
-   ВЕРСИЯ 2: разгон приглушён (реальные 3.2-3.4с до 100 км/ч вместо
-   игрушечных 2.2с), руление ощутимо агрессивнее на средних скоростях,
-   съезд на траву ощутимо гасит скорость.
+   CAR (характеристики текущей выбранной машины) приходит из cars.js,
+   которая подключается раньше этого файла.
    ========================================================================= */
-const CAR = {
-  length: 4.57,     // м, реальная длина 992 GT3 R
-  width: 2.0,       // м (с уширенными арками)
-  mass: 1300,       // кг, боевой вес с гонщиком
-  power: 420000,    // Вт, ~565 л.с.
-  maxTraction: 12500,  // Н, ограничение по сцеплению при старте с места (было 16500 - слишком резко)
-  cdA: 1.27,        // Cx*A, крупное антикрыло GT3 => высокое сопротивление
-  rollingCoef: 0.015,
-  vmax: 80.5,       // м/с (~290 км/ч) — расчётная максималка на равнине
-  minTurnRadius: 6.0,   // м, на полном руле и малой скорости (было 8.5 -> 7.0 -> 6.0, ещё резче)
-  reverseMax: -8,   // м/с, скорость заднего хода
-};
 const AIR_RHO = 1.225;
 const G = 9.81;
 
 /* =========================================================================
    ПАМЯТЬ ИГРЫ: последняя трасса/машина + статистика пилота (localStorage,
-   переживает закрытие вкладки/приложения). Сейчас трасса и машина всегда
-   одни и те же, но структура уже готова под несколько трасс/машин в будущем -
-   тогда просто CURRENT_TRACK/CURRENT_CAR будут выбираться на экране Drive.
+   переживает закрытие вкладки/приложения).
    ========================================================================= */
 const CURRENT_TRACK = { id: SELECTED_TRACK_ID, name: TRACK_DEF.name };
-const CURRENT_CAR   = { id: 'porsche-992-gt3r',  name: 'Porsche 992 GT3 R' };
+const CURRENT_CAR   = { id: SELECTED_CAR_ID,   name: CAR_DEF.name };
 try{
   localStorage.setItem('gt3_lastTrack', JSON.stringify(CURRENT_TRACK));
   localStorage.setItem('gt3_lastCar', JSON.stringify(CURRENT_CAR));
@@ -54,36 +44,40 @@ function saveStats(){
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && statsDirty) saveStats(); });
 window.addEventListener('pagehide', ()=>{ if(statsDirty) saveStats(); });
 
-// Закрутка от пробуксовки на траве (не связана с рулением, накапливается стихийно)
+// Закрутка от пробуксовки на траве/гравии (не связана с рулением, накапливается стихийно)
 let grassSpin = 0;
+// Наддув турбо (только у машин с turboLag>0, иначе всегда 1 - мгновенный отклик)
+let engineSpool = 1;
 
 function gripAccel(v){ // м/с^2, растёт с прижимной силой на скорости
   const f = Math.min(Math.abs(v)/CAR.vmax, 1);
-  return 17 + 9*f*f; // ~1.73g на малой скорости -> ~2.65g на максималке (руление ещё агрессивнее)
+  return CAR_DEF.gripBase + CAR_DEF.gripAdd*f*f;
 }
 // Бонус к поворотливости, плавно и процентно зависящий от скорости: на малой
 // скорости руление максимально острое, чем ближе к максималке - тем сложнее
 // повернуть (реалистичный эффект прижимной силы/инерции, без резких порогов).
 function turnAssist(v){
-  const f = Math.min(Math.abs(v)/CAR.vmax, 1); // 0 на месте -> 1 на максималке
-  return 1 + 1.6*Math.pow(1-f, 1.6); // ~2.6x на месте, плавно спадает к 1.0x на максималке
+  const f = Math.min(Math.abs(v)/CAR.vmax, 1);
+  return 1 + CAR_DEF.turnAssistBonus*Math.pow(1-f, 1.6);
 }
 function brakeDecel(v){
   const f = Math.min(Math.abs(v)/CAR.vmax, 1);
-  return 12 + 4*f*f; // 1.2g -> ~1.65g с аэродинамической прижимной силой
+  return CAR_DEF.brakeBase + CAR_DEF.brakeAdd*f*f;
 }
 
 const car = {
   x: CENTER[0][0], y: CENTER[0][1],
   heading: Math.atan2(TAN[0][0], -TAN[0][1]), // 0 = "север" (вверх), совпадает с ориентацией спрайта
-  speed: 0,
-  onTrack: 1, // 1 = чистый асфальт, меньше -> глубже в траве
+  vx: 0, vy: 0,       // мировой вектор скорости, м/с
+  speed: 0,           // отображаемая скорость (знак = вперёд/назад, модуль = реальная путевая скорость с учётом заноса)
+  onTrack: 1,          // 1 = чистый асфальт, меньше -> глубже в траве/гравии
 };
 
 function resetCar(){
   car.x = CENTER[0][0]; car.y = CENTER[0][1];
   car.heading = Math.atan2(TAN[0][0], -TAN[0][1]);
-  car.speed = 0;
+  car.vx = 0; car.vy = 0; car.speed = 0;
+  grassSpin = 0; engineSpool = 1;
   lap.currentT = 0; lap.checkpointPassed = false; lap.invalid = false;
 }
 
@@ -104,12 +98,18 @@ function update(dt){
   const throttle = input.throttle; // 0..1
   const brake = input.brake;       // 0..1
 
-  const v = car.speed;
-  const speedAbs = Math.abs(v);
+  const heading0 = car.heading;
+  const fx0 = Math.sin(heading0), fy0 = -Math.cos(heading0);
+  const rx0 = Math.cos(heading0), ry0 = Math.sin(heading0);
 
-  // Статистика пилота: суммарный пробег (в реальности едешь - счётчик крутится,
-  // независимо от того, по трассе ты или свернул в траву)
-  stats.totalKm += speedAbs*dt/1000;
+  // Раскладываем мировую скорость на продольную (vF, вперёд/назад по курсу)
+  // и поперечную (vR, занос/снос вбок) относительно ТЕКУЩЕГО курса кузова.
+  let vF = car.vx*fx0 + car.vy*fy0;
+  let vR = car.vx*rx0 + car.vy*ry0;
+  const speedAbs = Math.abs(vF);
+
+  // Статистика пилота: суммарный пробег (реальная путевая скорость, с учётом заноса)
+  stats.totalKm += Math.hypot(vF,vR)*dt/1000;
   statsDirty = true;
 
   // Насколько глубоко машина съехала с асфальта: 0 = на трассе, 1 = глубоко в траве
@@ -145,17 +145,27 @@ function update(dt){
   car.pitSpeeding = pitSpeeding;
   car.inGravel = inGravel;
 
-  // Лимиты трассы/питлейна нарушены - текущий круг не будет засчитан как быстрый
-  // (но продолжаем ехать как обычно, это не блокирующее наказание)
   if(offLimits || pitSpeeding){
     lap.invalid = true;
   }
 
-  // Тяга (ограничена и мощностью, и сцеплением), едет только вперёд от газа
+  // Наддув турбо (актуально только для машин с turboLag>0, иначе всегда 1)
+  if(CAR_DEF.turboLag>0){
+    const targetSpool = throttle>0.15 ? 1 : 0.15;
+    const rate = 1/Math.max(0.05, CAR_DEF.turboLag);
+    engineSpool += (targetSpool-engineSpool)*Math.min(1, rate*dt);
+  } else {
+    engineSpool = 1;
+  }
+
+  // Тяга (ограничена и мощностью, и сцеплением), едет только вперёд от газа.
+  // Пока машина реально скользит вбок (большой vR), шинам нечем толкать вперёд -
+  // доступная тяга по сцеплению снижается пропорционально боковому сносу.
   let force = 0;
+  const slipFactor = 1/(1+Math.abs(vR)*0.04);
   if(throttle>0 && brake===0){
-    const tractionLimited = CAR.maxTraction * onTrackFactor;
-    const powerLimited = CAR.power / Math.max(speedAbs, 1.5);
+    const tractionLimited = CAR.maxTraction * onTrackFactor * slipFactor * engineSpool;
+    const powerLimited = CAR.power / Math.max(speedAbs, 1.5) * engineSpool;
     force += Math.min(tractionLimited, powerLimited);
   }
   // Реверс (только если почти стоим и жмём тормоз/назад)
@@ -163,16 +173,16 @@ function update(dt){
     force += -4500;
   }
 
-  // Сопротивление воздуха и качению (всегда против направления скорости)
-  const drag = 0.5*AIR_RHO*CAR.cdA*v*v*Math.sign(v||1);
-  const roll = CAR.rollingCoef*CAR.mass*G*Math.sign(v) * (speedAbs>0.05?1:0);
+  // Сопротивление воздуха и качению (всегда против направления продольной скорости)
+  const drag = 0.5*AIR_RHO*CAR.cdA*vF*vF*Math.sign(vF||1);
+  const roll = CAR.rollingCoef*CAR.mass*G*Math.sign(vF) * (speedAbs>0.05?1:0);
   force -= drag;
   force -= roll;
 
   // Торможение
   if(brake>0 && speedAbs>0.6){
-    const maxBrakeForce = brakeDecel(v)*CAR.mass*onTrackFactor;
-    force -= Math.sign(v)*maxBrakeForce*brake;
+    const maxBrakeForce = brakeDecel(vF)*CAR.mass*onTrackFactor;
+    force -= Math.sign(vF)*maxBrakeForce*brake;
   }
 
   // Гравий - гораздо суровее травы, реально "хватает" машину за днище.
@@ -180,33 +190,26 @@ function update(dt){
   // просто менее эффективно и с риском потерять контроль (см. закрутку ниже)
   if(inGravel && speedAbs>0.05){
     const gravelDrag = 4400 + 42*speedAbs;
-    force -= Math.sign(v)*gravelDrag;
+    force -= Math.sign(vF)*gravelDrag;
   } else if(grassPenalty>0 && speedAbs>0.05){
     const grassDrag = grassPenalty*(1300 + 20*speedAbs);
-    force -= Math.sign(v)*grassDrag;
+    force -= Math.sign(vF)*grassDrag;
   }
 
   const accel = force/CAR.mass;
-  car.speed += accel*dt;
-  car.speed = Math.max(CAR.reverseMax, Math.min(CAR.vmax*1.05, car.speed));
-  if(Math.abs(car.speed)<0.03 && throttle===0 && brake===0) car.speed = 0;
+  vF += accel*dt;
+  vF = Math.max(CAR.reverseMax, Math.min(CAR.vmax*1.05, vF));
+  if(Math.abs(vF)<0.03 && throttle===0 && brake===0) vF = 0;
 
-  // Руление: желаемый радиус поворота -> ограничение по сцеплению (без честного заноса)
-  if(Math.abs(steer)>0.01 && Math.abs(car.speed)>0.05){
+  // Руление: желаемый радиус поворота -> ограничение по сцеплению (курс кузова).
+  // Это НЕ то же самое, что реальное направление движения - оно считается ниже.
+  let yawRate = 0;
+  if(Math.abs(steer)>0.01 && Math.abs(vF)>0.05){
     const radius = CAR.minTurnRadius/Math.abs(steer);
-    const grip = gripAccel(car.speed)*onTrackFactor*turnAssist(car.speed);
-    const maxYawRate = grip/Math.max(Math.abs(car.speed),3);
-    let yawRate = (car.speed/radius)*Math.sign(steer);
+    const grip = gripAccel(vF)*onTrackFactor*turnAssist(vF);
+    const maxYawRate = grip/Math.max(Math.abs(vF),3);
+    yawRate = (vF/radius)*Math.sign(steer);
     yawRate = Math.max(-maxYawRate, Math.min(maxYawRate, yawRate));
-    car.heading += yawRate*dt;
-
-    // Реальная потеря скорости в повороте: чем сильнее машина реально "грузит"
-    // шины боковым ускорением, тем больше она теряет в скорости - как в жизни,
-    // прямая всегда быстрее поворота на той же тяге.
-    const CORNER_DRAG_COEF = 0.12;
-    const lateralAccel = Math.abs(car.speed*yawRate);
-    const corneringLoss = Math.min(CORNER_DRAG_COEF*lateralAccel*dt, Math.abs(car.speed));
-    car.speed -= Math.sign(car.speed)*corneringLoss;
   }
 
   // Пробуксовка на траве/гравии: если сильно газовать при слабом сцеплении, машину
@@ -223,10 +226,42 @@ function update(dt){
   const spinDamp = onTrackFactor>0.9 ? 4.5 : 0.7; // на асфальте гасится в разы быстрее
   grassSpin *= Math.max(0, 1-spinDamp*dt);
   grassSpin = Math.max(-6, Math.min(6, grassSpin));
-  car.heading += grassSpin*dt;
 
-  car.x += Math.sin(car.heading)*car.speed*dt;
-  car.y += -Math.cos(car.heading)*car.speed*dt;
+  // Новый курс кузова = руление + стихийная закрутка
+  car.heading = heading0 + (yawRate+grassSpin)*dt;
+
+  // Пересобираем старый мировой вектор скорости (продольная vF уже обновлена
+  // тягой/тормозом, поперечная vR пока не тронута - её трогают только шины ниже)
+  const worldVx = vF*fx0 + vR*rx0;
+  const worldVy = vF*fy0 + vR*ry0;
+
+  // Раскладываем ТОТ ЖЕ мировой вектор в осях НОВОГО курса. Раз курс повернулся,
+  // а вектор скорости - нет, часть её "превращается" в поперечную - это и есть
+  // занос по инерции.
+  const fx1 = Math.sin(car.heading), fy1 = -Math.cos(car.heading);
+  const rx1 = Math.cos(car.heading), ry1 = Math.sin(car.heading);
+  let vF2 = worldVx*fx1 + worldVy*fy1;
+  let vR2 = worldVx*rx1 + worldVy*ry1;
+
+  // Сцепление шин пытается погасить занос (vR2 -> 0), но не быстрее, чем
+  // позволяет доступный грип на этой поверхности - на асфальте почти мгновенно,
+  // на траве/гравии - медленно, и машину ощутимо сносит юзом.
+  const maxLateralDeltaV = gripAccel(vF2)*onTrackFactor*dt;
+  if(Math.abs(vR2) <= maxLateralDeltaV){
+    vR2 = 0;
+  } else {
+    vR2 -= Math.sign(vR2)*maxLateralDeltaV;
+  }
+
+  car.vx = vF2*fx1 + vR2*rx1;
+  car.vy = vF2*fy1 + vR2*ry1;
+  if(Math.abs(vF2)<0.03 && Math.abs(vR2)<0.03 && throttle===0 && brake===0){
+    car.vx = 0; car.vy = 0; vF2 = 0; vR2 = 0;
+  }
+
+  car.x += car.vx*dt;
+  car.y += car.vy*dt;
+  car.speed = Math.sign(vF2||1) * Math.hypot(vF2, vR2);
 
   // Учёт кругов по прогрессу вдоль трассы (используем уже посчитанный near0)
   const frac = near0.idx/N;

@@ -37,10 +37,10 @@ function drawThumb(){
 drawThumb();
 window.addEventListener('resize', drawThumb);
 
-/* ---- Своя текстура машины (тот же car.png, что и в самой игре) поверх превью ---- */
+/* ---- Своя текстура машины (та же, что и в самой игре) поверх превью ---- */
 const carImg = document.getElementById('driveCarImg');
 carImg.onerror = ()=>{ carImg.style.display = 'none'; };
-carImg.src = 'car.png';
+carImg.src = CAR_DEF.texture;
 
 /* ---- Своя фотка/текстура трассы (опционально) ---- */
 const trackBg = document.getElementById('trackBgImg');
