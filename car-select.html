@@ -23,14 +23,18 @@
   .carTile.current{border-color:var(--grello);}
   .currentBadge{position:absolute;top:8px;right:8px;z-index:2;font-size:9px;letter-spacing:1px;
     color:#111;background:var(--grello);border-radius:5px;padding:2px 6px;font-weight:700;}
+  #chosenTrackLine{font-size:12px;color:var(--text-dim);margin:-10px 0 14px;}
+  #chosenTrackLine b{color:var(--grello);}
 </style>
 </head>
 <body>
 <div id="pageRoot">
-  <a href="index.html" class="backLink">‹ меню</a>
+  <a href="track-select.html" class="backLink">‹ трасса</a>
   <h1>ВЫБОР МАШИНЫ</h1>
+  <div class="tMetaLine" id="chosenTrackLine"></div>
   <div id="carGrid"></div>
 </div>
+<script src="track.js"></script>
 <script src="cars.js"></script>
 <script src="car-select.js"></script>
 </body>

@@ -23,18 +23,16 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
   border:1px solid var(--panel-edge);border-radius:7px;
   box-shadow:0 4px 14px rgba(0,0,0,.5);}
 
-/* ---- Верх-центр: мини-карта + время круга ---- */
-#topPanel{left:50%;top:calc(6px + var(--safe-t));transform:translateX(-50%);
-  display:flex;align-items:center;gap:6px;padding:4px 7px;}
+/* ---- Низ-центр: карта + время круга + передача/обороты/скорость, одной панелью ---- */
+#bottomHud{left:50%;bottom:calc(6px + var(--safe-b));transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;padding:5px 12px;}
 #minimap{display:block;border-radius:4px;}
 #timing .row{font-family:"SF Mono","Consolas",monospace;font-size:7px;color:var(--text-dim);
   display:flex;justify-content:space-between;gap:7px;margin:0;white-space:nowrap;}
 #timing .row b{color:var(--text);font-size:9px;font-weight:700;}
 #lapCount{color:var(--grello);}
 
-/* ---- Низ-центр: передача / обороты / скорость ---- */
-#cluster{left:50%;bottom:calc(6px + var(--safe-b));transform:translateX(-50%);
-  padding:5px 12px 5px;text-align:center;min-width:120px;}
+#clusterGroup{text-align:center;min-width:120px;}
 #clusterTop{display:flex;align-items:center;justify-content:center;gap:8px;}
 #gearBig{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:28px;
   color:var(--grello);line-height:1;text-shadow:0 0 9px rgba(215,230,0,.35);
@@ -49,12 +47,12 @@ html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%;width:1
 #speedSmall span{font-size:6px;}
 
 /* ---- Off-track flag ---- */
-#offtrack{left:50%;top:calc(52px + var(--safe-t));transform:translateX(-50%);
+#offtrack{left:50%;top:calc(10px + var(--safe-t));transform:translateX(-50%);
   background:rgba(255,59,48,.12);border:1px solid var(--warn);color:var(--warn);
   font-weight:700;letter-spacing:1px;font-size:7px;padding:3px 8px;border-radius:5px;
   opacity:0;transition:opacity .15s;}
 
-#pitWarn{left:50%;top:calc(70px + var(--safe-t));transform:translateX(-50%);
+#pitWarn{left:50%;top:calc(28px + var(--safe-t));transform:translateX(-50%);
   background:rgba(255,59,48,.12);border:1px solid var(--warn);color:var(--warn);
   font-weight:700;letter-spacing:1px;font-size:7px;padding:3px 8px;border-radius:5px;
   opacity:0;transition:opacity .15s;}

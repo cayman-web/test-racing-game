@@ -44,6 +44,23 @@ function saveStats(){
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && statsDirty) saveStats(); });
 window.addEventListener('pagehide', ()=>{ if(statsDirty) saveStats(); });
 
+/* ---- Лучшие круги по каждой паре трасса+машина (для экрана статистики) ---- */
+const BEST_LAPS_KEY = 'gt3_bestLaps';
+function loadBestLaps(){
+  try{ return JSON.parse(localStorage.getItem(BEST_LAPS_KEY) || '{}'); }catch(e){ return {}; }
+}
+function saveBestLapTime(trackId, carId, timeSeconds){
+  const all = loadBestLaps();
+  if(!all[trackId]) all[trackId] = {};
+  if(all[trackId][carId]===undefined || timeSeconds < all[trackId][carId]){
+    all[trackId][carId] = timeSeconds;
+    try{ localStorage.setItem(BEST_LAPS_KEY, JSON.stringify(all)); }catch(e){}
+  }
+}
+const bestLapsAll = loadBestLaps();
+const storedBestForThisRun = (bestLapsAll[SELECTED_TRACK_ID] && bestLapsAll[SELECTED_TRACK_ID][SELECTED_CAR_ID]!==undefined)
+  ? bestLapsAll[SELECTED_TRACK_ID][SELECTED_CAR_ID] : null;
+
 // Закрутка от пробуксовки на траве/гравии (не связана с рулением, накапливается стихийно)
 let grassSpin = 0;
 // Наддув турбо (только у машин с turboLag>0, иначе всегда 1 - мгновенный отклик)
@@ -82,7 +99,7 @@ function resetCar(){
 }
 
 /* ---- Круги/время ---- */
-const lap = { count:1, currentT:0, best:null, checkpointPassed:false, lastFrac:0, invalid:false };
+const lap = { count:1, currentT:0, best:storedBestForThisRun, checkpointPassed:false, lastFrac:0, invalid:false };
 
 function fmtTime(t){
   const m = Math.floor(t/60);
@@ -267,7 +284,10 @@ function update(dt){
   const frac = near0.idx/N;
   if(frac>0.4 && frac<0.6) lap.checkpointPassed = true;
   if(lap.lastFrac>0.85 && frac<0.15 && lap.checkpointPassed){
-    if(!lap.invalid && (lap.best===null || lap.currentT<lap.best)) lap.best = lap.currentT;
+    if(!lap.invalid && (lap.best===null || lap.currentT<lap.best)){
+      lap.best = lap.currentT;
+      saveBestLapTime(SELECTED_TRACK_ID, SELECTED_CAR_ID, lap.currentT);
+    }
     stats.totalLaps++;
     if(lap.invalid) stats.dirtyLaps++; else stats.cleanLaps++;
     saveStats();

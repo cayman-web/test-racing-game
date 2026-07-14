@@ -3,11 +3,14 @@
 
 const grid = document.getElementById('carGrid');
 
+document.getElementById('chosenTrackLine').innerHTML =
+  'Трасса: <b>' + TRACK_DEF.name.toUpperCase() + '</b>';
+
 Object.keys(CARS).forEach(id=>{
   const def = CARS[id];
   const a = document.createElement('a');
   a.className = 'carTile' + (id===SELECTED_CAR_ID ? ' current' : '');
-  a.href = 'race.html?car=' + encodeURIComponent(id);
+  a.href = 'race.html?track=' + encodeURIComponent(SELECTED_TRACK_ID) + '&car=' + encodeURIComponent(id);
 
   if(id===SELECTED_CAR_ID){
     const badge = document.createElement('div');

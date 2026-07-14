@@ -39,7 +39,7 @@ Object.keys(TRACKS).forEach(id=>{
   const def = TRACKS[id];
   const a = document.createElement('a');
   a.className = 'trackTile' + (id===SELECTED_TRACK_ID ? ' current' : '');
-  a.href = 'race.html?track=' + encodeURIComponent(id);
+  a.href = 'car-select.html?track=' + encodeURIComponent(id);
 
   const canvas = document.createElement('canvas');
   a.appendChild(canvas);

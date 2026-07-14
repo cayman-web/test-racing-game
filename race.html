@@ -28,27 +28,25 @@
   Поверните телефон горизонтально
 </div>
 
-<!-- Верх по центру: мини-карта + время круга -->
-<div class="hud panel" id="topPanel">
+<!-- Низ по центру: карта + время круга + передача/обороты/скорость - всё в одной панели -->
+<div class="hud panel" id="bottomHud">
   <canvas id="minimap" width="54" height="54"></canvas>
   <div id="timing">
     <div class="row">КРУГ <b id="lapCount">1</b></div>
     <div class="row">ТЕК <b id="curLap">0:00.00</b></div>
     <div class="row">ЛУЧШ <b id="bestLap">—</b></div>
   </div>
-</div>
-
-<!-- Низ по центру: передача (приоритет) + обороты + скорость -->
-<div class="hud panel" id="cluster">
-  <div id="clusterTop">
-    <div id="gearBig">1</div>
-    <div id="rpmBlock">
-      <div id="rpmNum">1000</div>
-      <div id="rpmLabel">RPM</div>
-      <div id="rpmBar"><div id="rpmFill"></div></div>
+  <div id="clusterGroup">
+    <div id="clusterTop">
+      <div id="gearBig">1</div>
+      <div id="rpmBlock">
+        <div id="rpmNum">1000</div>
+        <div id="rpmLabel">RPM</div>
+        <div id="rpmBar"><div id="rpmFill"></div></div>
+      </div>
     </div>
+    <div id="speedSmall">0<span> км/ч</span></div>
   </div>
-  <div id="speedSmall">0<span> км/ч</span></div>
 </div>
 
 <div class="hud" id="offtrack">СХОД С ТРАССЫ</div>
