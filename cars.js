@@ -18,6 +18,7 @@ const CARS = {
   'porsche-992-gt3r': {
     name: 'Porsche 911 (992) GT3 R',
     texture: 'car.png',
+    sideTexture: 'side_992gt3r.png',
     length: 4.57, width: 2.0, mass: 1300,
     power: 420000,       // ~565 л.с.
     maxTraction: 12500,
@@ -35,6 +36,7 @@ const CARS = {
   'porsche-987-cayman-s': {
     name: 'Porsche Cayman S (987)',
     texture: 'car-cayman.png',
+    sideTexture: 'side_cayman987.png',
     length: 4.34, width: 1.80, mass: 1350,
     power: 220000,       // ~295 л.с.
     maxTraction: 9200,
@@ -52,6 +54,7 @@ const CARS = {
   'porsche-930-turbo': {
     name: 'Porsche 911 Turbo (930)',
     texture: 'car-930.png',
+    sideTexture: 'side_911930.png',
     length: 4.29, width: 1.78, mass: 1300,
     power: 224000,       // ~300 л.с.
     maxTraction: 8600,
