@@ -5,19 +5,20 @@ const items = Array.from(document.querySelectorAll('[data-nav]'));
 if(!items.length) return;
 
 let idx = 0;
+let showGlow = false; // обводка включается ТОЛЬКО реальным вводом с геймпада
+
+function applyVisual(){
+  items.forEach((it,i)=>{ it.classList.toggle('navFocused', showGlow && i===idx); });
+}
 
 function focusItem(i){
-  if(items[idx]) items[idx].classList.remove('navFocused');
   idx = ((i % items.length) + items.length) % items.length;
-  items[idx].classList.add('navFocused');
-  items[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
+  applyVisual();
+  if(showGlow) items[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
 }
-focusItem(0);
 
 function activate(){
   const el = items[idx];
-  // Если сфокусированная плитка сама не кликабельна напрямую (например, обёртка
-  // с невидимой ссылкой внутри, как Drive) - ищем и кликаем вложенную ссылку/кнопку
   if(el.tagName==='A' || el.tagName==='BUTTON'){
     el.click();
   } else {
@@ -26,14 +27,19 @@ function activate(){
   }
 }
 
-/* ---- Клавиатура (стрелки + Enter/Пробел) ---- */
+/* Мышь/тач - убираем геймпадную обводку, человек снова управляет пальцем/курсором */
+window.addEventListener('pointerdown', ()=>{
+  if(showGlow){ showGlow=false; applyVisual(); }
+}, {passive:true});
+
+/* ---- Клавиатура: тоже листает пункты, но без геймпадной обводки (её включает только геймпад) ---- */
 window.addEventListener('keydown', e=>{
-  if(e.code==='ArrowRight' || e.code==='ArrowDown'){ focusItem(idx+1); e.preventDefault(); }
-  else if(e.code==='ArrowLeft' || e.code==='ArrowUp'){ focusItem(idx-1); e.preventDefault(); }
+  if(e.code==='ArrowRight' || e.code==='ArrowDown'){ showGlow=false; focusItem(idx+1); e.preventDefault(); }
+  else if(e.code==='ArrowLeft' || e.code==='ArrowUp'){ showGlow=false; focusItem(idx-1); e.preventDefault(); }
   else if(e.code==='Enter' || e.code==='Space'){ activate(); e.preventDefault(); }
 });
 
-/* ---- Геймпад: крестовина/стик - выбор пункта, A - активировать ---- */
+/* ---- Геймпад: крестовина/стик - выбор пункта (включает обводку), A - активировать ---- */
 let padCooldown = 0;
 function pollPad(){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -48,9 +54,9 @@ function pollPad(){
     const aBtn = gp.buttons[0] && gp.buttons[0].pressed;
     const axisX = gp.axes[0] || 0, axisY = gp.axes[1] || 0;
 
-    if(dDown || dRight || axisX>0.5 || axisY>0.5){ focusItem(idx+1); padCooldown = now+220; }
-    else if(dUp || dLeft || axisX<-0.5 || axisY<-0.5){ focusItem(idx-1); padCooldown = now+220; }
-    else if(aBtn){ activate(); padCooldown = now+300; }
+    if(dDown || dRight || axisX>0.5 || axisY>0.5){ showGlow=true; focusItem(idx+1); padCooldown = now+220; }
+    else if(dUp || dLeft || axisX<-0.5 || axisY<-0.5){ showGlow=true; focusItem(idx-1); padCooldown = now+220; }
+    else if(aBtn){ showGlow=true; applyVisual(); activate(); padCooldown = now+300; }
     break;
   }
   requestAnimationFrame(pollPad);

@@ -23,7 +23,7 @@ Object.keys(CARS).forEach(id=>{
   const img = document.createElement('img');
   img.alt = '';
   img.onerror = ()=>{ img.style.display = 'none'; };
-  img.src = def.sideTexture;
+  img.src = def.selectTexture;
   a.appendChild(img);
 
   const info = document.createElement('div');
