@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>GT3 RACER — Настройка заезда</title>
+<link rel="stylesheet" href="menu.css">
+<style>
+  #pageRoot{display:flex;flex-direction:column;height:100%;}
+  #setupGrid{display:flex;gap:14px;margin-top:4px;}
+  .setupCard{position:relative;flex:1;background:linear-gradient(180deg,var(--panel),#0c0c0e);
+    border:1px solid var(--panel-edge);border-radius:16px;padding:10px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .cycleBtn{pointer-events:auto;background:#1c1c20;border:1px solid var(--panel-edge);
+    color:var(--text-dim);border-radius:9px;font-size:14px;line-height:1;
+    width:100%;padding:6px 0;}
+  .cycleBtn:active{color:var(--grello);border-color:var(--grello);}
+  .setupThumbWrap{position:relative;width:100%;height:96px;margin:8px 0;
+    border-radius:10px;overflow:hidden;background:#15161a;}
+  .setupThumbWrap canvas, .setupThumbWrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;}
+  .setupName{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:13px;
+    color:var(--grello);line-height:1.3;}
+  .setupMeta{font-size:10px;color:var(--text-dim);margin-top:3px;min-height:12px;}
+  .setupLabel{font-size:10px;letter-spacing:1px;color:var(--text-dim);margin-bottom:2px;}
+
+  #timeCard{margin-top:14px;flex-direction:row;align-items:center;gap:10px;padding:12px 14px;}
+  #timeCard .cycleBtn{width:44px;flex-shrink:0;padding:12px 0;font-size:17px;}
+  #timeDisplay{flex:1;}
+  #timeBig{font-family:"SF Mono","Consolas",monospace;font-weight:800;font-size:26px;color:var(--text);}
+  #timeSkyPreview{height:8px;border-radius:4px;margin:6px 0;
+    background:linear-gradient(90deg,#1a2340,#3a5fae,#ffd58a,#ff9a4d,#3a5fae,#1a2340);
+    position:relative;overflow:hidden;}
+  #timeSkyMarker{position:absolute;top:-2px;width:3px;height:12px;background:#fff;border-radius:2px;
+    box-shadow:0 0 6px rgba(255,255,255,.8);}
+  #timeLabel{font-size:11px;color:var(--text-dim);letter-spacing:1px;}
+
+  #startBtn{display:block;margin-top:16px;padding:16px;text-align:center;text-decoration:none;
+    background:var(--grello);color:#111;font-family:"SF Mono","Consolas",monospace;font-weight:800;
+    font-size:16px;letter-spacing:2px;border-radius:14px;}
+  #startBtn:active{filter:brightness(1.1);}
+</style>
+</head>
+<body class="pageFade">
+<div id="pageRoot">
+  <a href="index.html" class="backLink" data-nav>‹ меню</a>
+  <h1>НАСТРОЙКА ЗАЕЗДА</h1>
+
+  <div id="setupGrid">
+    <div class="setupCard" id="carCard">
+      <div class="setupLabel">МАШИНА</div>
+      <button class="cycleBtn" id="carPrev" data-nav>▲</button>
+      <div class="setupThumbWrap"><img id="carPhoto" alt=""></div>
+      <div class="setupName" id="carName">—</div>
+      <div class="setupMeta" id="carMeta">—</div>
+      <button class="cycleBtn" id="carNext" data-nav>▼</button>
+    </div>
+
+    <div class="setupCard" id="trackCard">
+      <div class="setupLabel">ТРАССА</div>
+      <button class="cycleBtn" id="trackPrev" data-nav>▲</button>
+      <div class="setupThumbWrap"><canvas id="trackThumb"></canvas></div>
+      <div class="setupName" id="trackName">—</div>
+      <div class="setupMeta" id="trackMeta">—</div>
+      <button class="cycleBtn" id="trackNext" data-nav>▼</button>
+    </div>
+  </div>
+
+  <div class="setupCard" id="timeCard">
+    <button class="cycleBtn" id="timePrev" data-nav>◀</button>
+    <div id="timeDisplay">
+      <div class="setupLabel">ВРЕМЯ СУТОК</div>
+      <div id="timeBig">13:00</div>
+      <div id="timeSkyPreview"><div id="timeSkyMarker"></div></div>
+      <div id="timeLabel">ДЕНЬ</div>
+    </div>
+    <button class="cycleBtn" id="timeNext" data-nav>▶</button>
+  </div>
+
+  <a href="#" id="startBtn" data-nav>СТАРТ</a>
+</div>
+<script src="daynight.js"></script>
+<script src="track.js"></script>
+<script src="cars.js"></script>
+<script src="drive-setup.js"></script>
+<script src="menu-nav.js"></script>
+<script src="transitions.js"></script>
+</body>
+</html>

@@ -12,6 +12,10 @@ function resizeCanvas(){
   canvas.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('resize', resizeCanvas); resizeCanvas();
+if(window.reportAssetLoaded) reportAssetLoaded(); // этап 2: канвас/рендер готовы
+
+// Состояние солнца на выбранный час - считаем один раз, за время заезда время суток не меняется
+const SUN = getSunState(SELECTED_HOUR);
 
 // Зум: пикселей на метр. Регулируется колесом мыши или клавишами +/-.
 let ZOOM = 9.5;
@@ -45,8 +49,8 @@ function buildCarShadow(){
   carShadowCanvas = off;
 }
 
-carImg.onload = ()=>{ carImgOk = true; buildCarShadow(); };
-carImg.onerror = ()=>{ carImgOk = false; carShadowCanvas = null; };
+carImg.onload = ()=>{ carImgOk = true; buildCarShadow(); if(window.reportAssetLoaded) reportAssetLoaded(); };
+carImg.onerror = ()=>{ carImgOk = false; carShadowCanvas = null; if(window.reportAssetLoaded) reportAssetLoaded(); };
 carImg.src = CAR_DEF.texture;
 
 function drawPlaceholderCar(pxLen, pxWid){
@@ -218,10 +222,20 @@ function drawCar(){
   ctx.rotate(car.heading);
   const pxLen = CAR.length, pxWid = CAR.width;
 
-  // тень по форме текстуры: смещена вниз/в сторону от солнца и слегка размыта
-  const shDx = pxLen*0.025, shDy = pxLen*0.06;
+  // Тень по форме текстуры: направление считается в МИРОВЫХ координатах (куда
+  // солнце - туда и тень, независимо от того, куда повёрнута машина), поэтому
+  // разворачиваем мировой вектор тени в локальную систему координат машины
+  // (мы уже внутри ctx.rotate(car.heading), значит нужно повернуть на -heading).
+  const cosH = Math.cos(-car.heading), sinH = Math.sin(-car.heading);
+  const worldSD = SUN.shadowDir;
+  const localSDx = worldSD.x*cosH - worldSD.y*sinH;
+  const localSDy = worldSD.x*sinH + worldSD.y*cosH;
+  const shadowLen = pxLen*0.14*SUN.shadowLengthFactor;
+  const shDx = localSDx*shadowLen, shDy = localSDy*shadowLen;
+
   ctx.save();
   ctx.translate(shDx, shDy);
+  ctx.globalAlpha = SUN.shadowAlphaFactor;
   try{ ctx.filter = 'blur(0.05px)'; }catch(e){}
   if(carImgOk && carShadowCanvas){
     ctx.drawImage(carShadowCanvas, -pxWid/2, -pxLen/2, pxWid, pxLen);
@@ -273,6 +287,25 @@ function drawMinimap(){
   mctx.fill();
 }
 
+function drawLightingOverlay(){
+  // Ночная темнота (синеватый мультиплай - одновременно темнит и подкрашивает)
+  if(SUN.nightAlpha>0.01){
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = 'rgba(25,35,70,'+SUN.nightAlpha.toFixed(3)+')';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
+  // Тёплый оттенок рассвета/заката
+  if(SUN.warmAlpha>0.01){
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.fillStyle = 'rgba(255,140,60,'+SUN.warmAlpha.toFixed(3)+')';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
+}
+
 function render(){
   ctx.save();
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -282,5 +315,6 @@ function render(){
   drawTrack();
   drawCar();
   ctx.restore();
+  drawLightingOverlay();
   drawMinimap();
 }

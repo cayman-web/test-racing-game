@@ -207,6 +207,7 @@ function updateHud(){
    ГЛАВНЫЙ ЦИКЛ
    ========================================================================= */
 let lastT = performance.now();
+if(window.reportAssetLoaded) reportAssetLoaded(); // этап 1: скрипты трассы/машины/физики выполнены
 function loop(now){
   let dt = (now-lastT)/1000;
   lastT = now;
@@ -217,4 +218,8 @@ function loop(now){
   updateHud();
   requestAnimationFrame(loop);
 }
+
+const timeIcon = SUN.isNight ? '🌙' : (SUN.twilight>0.35 ? '🌅' : '☀');
+document.getElementById('timeIndicator').textContent = timeIcon+' '+fmtHour(SELECTED_HOUR)+' · '+SUN.label;
+
 requestAnimationFrame(loop);

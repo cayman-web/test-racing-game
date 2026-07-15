@@ -14,13 +14,20 @@
 <title>GT3 RACER — Porsche 992 GT3 R Test</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="pageFade">
+
+<div id="loadingScreen">
+  <div id="loadingPct">0%</div>
+  <div id="loadingBarWrap"><div id="loadingBarFill"></div></div>
+  <div id="loadingLabel">ЗАГРУЗКА...</div>
+</div>
 
 <canvas id="game"></canvas>
 
 <a href="index.html" class="hud" id="backToMenu">‹ меню</a>
 
 <div class="hud" id="padIndicator">🎮</div>
+<div class="hud" id="timeIndicator"></div>
 
 <!-- Подсказка повернуть телефон - игра рассчитана на альбомную ориентацию -->
 <div id="rotateHint">
@@ -70,10 +77,13 @@
   <button id="gasBtn" class="ctrlBtn big gasBtn">▲</button>
 </div>
 
+<script src="loading.js"></script>
+<script src="daynight.js"></script>
 <script src="track.js"></script>
 <script src="cars.js"></script>
 <script src="car.js"></script>
 <script src="render.js"></script>
 <script src="main.js"></script>
+<script src="transitions.js"></script>
 </body>
 </html>
