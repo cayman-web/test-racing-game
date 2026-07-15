@@ -15,7 +15,15 @@ function focusItem(i){
 focusItem(0);
 
 function activate(){
-  items[idx].click();
+  const el = items[idx];
+  // Если сфокусированная плитка сама не кликабельна напрямую (например, обёртка
+  // с невидимой ссылкой внутри, как Drive) - ищем и кликаем вложенную ссылку/кнопку
+  if(el.tagName==='A' || el.tagName==='BUTTON'){
+    el.click();
+  } else {
+    const inner = el.querySelector('a[href], button');
+    (inner || el).click();
+  }
 }
 
 /* ---- Клавиатура (стрелки + Enter/Пробел) ---- */

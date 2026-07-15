@@ -46,9 +46,9 @@ body.pageFade.pageOut{opacity:0;}
 #trackBgImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   opacity:.5;filter:brightness(.5) saturate(.7);}
 #driveThumb{position:absolute;inset:0;width:100%;height:100%;}
-/* Фото машины - маленькое, в углу плитки (не перекрывает надписи наверху) */
-#driveCarImg{position:absolute;right:14px;bottom:14px;left:auto;top:auto;
-  max-width:44%;max-height:48%;object-fit:contain;
+/* Фото машины - маленькое, вплотную в углу плитки (не перекрывает надписи наверху) */
+#driveCarImg{position:absolute;right:0;bottom:0;left:auto;top:auto;
+  max-width:46%;max-height:50%;object-fit:contain;
   filter:drop-shadow(0 10px 14px rgba(0,0,0,.6));opacity:.96;}
 
 .tileLabel{position:relative;z-index:2;pointer-events:none;}
@@ -79,6 +79,11 @@ body.pageFade.pageOut{opacity:0;}
   color:var(--text);background:#1c1c20;border:1px solid var(--panel-edge);border-radius:12px;padding:16px 10px;}
 .optBtn.active{background:var(--grello);color:#111;border-color:var(--grello);}
 
-/* ---- Навигация клавиатурой/геймпадом: белая светящаяся обводка ---- */
-.navFocused{outline:none;
-  box-shadow:0 0 0 2px rgba(255,255,255,.95), 0 0 16px 3px rgba(255,255,255,.6);}
+/* ---- Навигация клавиатурой/геймпадом: белая светящаяся обводка.
+   Важно: используем outline, а не box-shadow - box-shadow обрезается
+   overflow:hidden у самих плиток (частый CSS-готча), outline - нет. ---- */
+.navFocused{
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: inset 0 0 16px 2px rgba(255,255,255,.4);
+}
