@@ -27,9 +27,9 @@
   #chosenTrackLine b{color:var(--grello);}
 </style>
 </head>
-<body>
+<body class="pageFade">
 <div id="pageRoot">
-  <a href="track-select.html" class="backLink">‹ трасса</a>
+  <a href="track-select.html" class="backLink" data-nav>‹ трасса</a>
   <h1>ВЫБОР МАШИНЫ</h1>
   <div class="tMetaLine" id="chosenTrackLine"></div>
   <div id="carGrid"></div>
@@ -37,5 +37,7 @@
 <script src="track.js"></script>
 <script src="cars.js"></script>
 <script src="car-select.js"></script>
+<script src="menu-nav.js"></script>
+<script src="transitions.js"></script>
 </body>
 </html>

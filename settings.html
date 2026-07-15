@@ -7,19 +7,21 @@
 <title>GT3 RACER — Настройки</title>
 <link rel="stylesheet" href="menu.css">
 </head>
-<body>
+<body class="pageFade">
 <div id="pageRoot">
-  <a href="index.html" class="backLink">‹ меню</a>
+  <a href="index.html" class="backLink" data-nav>‹ меню</a>
   <h1>SETTINGS</h1>
 
   <div class="settingBlock">
     <div class="settingLabel">Приоритетный метод управления при запуске заезда</div>
     <div class="optionRow">
-      <button class="optBtn" data-pref="touch">Экран (кнопки)</button>
-      <button class="optBtn" data-pref="gamepad">Геймпад</button>
+      <button class="optBtn" data-pref="touch" data-nav>Экран (кнопки)</button>
+      <button class="optBtn" data-pref="gamepad" data-nav>Геймпад</button>
     </div>
   </div>
 </div>
 <script src="settings.js"></script>
+<script src="menu-nav.js"></script>
+<script src="transitions.js"></script>
 </body>
 </html>

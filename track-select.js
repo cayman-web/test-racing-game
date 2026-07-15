@@ -40,6 +40,7 @@ Object.keys(TRACKS).forEach(id=>{
   const a = document.createElement('a');
   a.className = 'trackTile' + (id===SELECTED_TRACK_ID ? ' current' : '');
   a.href = 'car-select.html?track=' + encodeURIComponent(id);
+  a.setAttribute('data-nav','');
 
   const canvas = document.createElement('canvas');
   a.appendChild(canvas);

@@ -16,6 +16,11 @@
 html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;
   font-family:-apple-system,"SF Pro Text",Arial,sans-serif;-webkit-user-select:none;user-select:none;}
 
+/* ---- Плавный переход между страницами меню ---- */
+body.pageFade{opacity:0;transition:opacity .18s ease;}
+body.pageFade.pageIn{opacity:1;}
+body.pageFade.pageOut{opacity:0;}
+
 /* ---- Главное меню ---- */
 #menuRoot{display:flex;gap:14px;height:100%;
   padding:calc(14px + var(--safe-t)) calc(14px + var(--safe-r)) calc(14px + var(--safe-b)) calc(14px + var(--safe-l));}
@@ -29,7 +34,7 @@ html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hid
 .tile-drive{flex:1.35;}
 .tile-stats, .tile-settings{flex:1;}
 
-.tileMainLink{position:absolute;inset:0;z-index:1;}
+.tileMainLink{position:absolute;inset:0;z-index:1;border-radius:20px;}
 .changeTrackBtn{position:absolute;top:10px;right:10px;z-index:3;
   width:30px;height:30px;display:flex;align-items:center;justify-content:center;
   font-size:15px;line-height:1;background:rgba(17,17,20,.75);
@@ -73,3 +78,7 @@ html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hid
 .optBtn{flex:1;pointer-events:auto;font-family:-apple-system,Arial,sans-serif;font-size:14px;font-weight:600;
   color:var(--text);background:#1c1c20;border:1px solid var(--panel-edge);border-radius:12px;padding:16px 10px;}
 .optBtn.active{background:var(--grello);color:#111;border-color:var(--grello);}
+
+/* ---- Навигация клавиатурой/геймпадом: белая светящаяся обводка ---- */
+.navFocused{outline:none;
+  box-shadow:0 0 0 2px rgba(255,255,255,.95), 0 0 16px 3px rgba(255,255,255,.6);}
