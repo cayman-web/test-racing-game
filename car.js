@@ -280,6 +280,23 @@ function update(dt){
   car.y += car.vy*dt;
   car.speed = Math.sign(vF2||1) * Math.hypot(vF2, vR2);
 
+  // Следы шин при заносе: рисуем у задних колёс, цвет и интенсивность зависят
+  // от поверхности (чёрная резина на асфальте, тёмный шрам на траве/гравии)
+  const slipMag = Math.abs(vR2);
+  if(slipMag > 0.7 && window.addSkidMark){
+    const rearX = car.x - fx1*CAR.length*0.32, rearY = car.y - fy1*CAR.length*0.32;
+    const offs = CAR.width*0.38;
+    const wheelL = [rearX + rx1*(-offs), rearY + ry1*(-offs)];
+    const wheelR = [rearX + rx1*offs, rearY + ry1*offs];
+    let color, baseAlpha;
+    if(inGravel){ color='rgb(94,74,42)'; baseAlpha=0.14; }
+    else if(grassPenalty>0.15){ color='rgb(58,44,24)'; baseAlpha=0.16; }
+    else { color='rgb(15,15,15)'; baseAlpha=0.20; }
+    const alpha = Math.min(baseAlpha, baseAlpha*(slipMag/5));
+    addSkidMark(wheelL[0], wheelL[1], 0.22, color, alpha);
+    addSkidMark(wheelR[0], wheelR[1], 0.22, color, alpha);
+  }
+
   // Учёт кругов по прогрессу вдоль трассы (используем уже посчитанный near0)
   const frac = near0.idx/N;
   if(frac>0.4 && frac<0.6) lap.checkpointPassed = true;

@@ -29,6 +29,47 @@ window.addEventListener('wheel', e=>{
 
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
+/* =========================================================================
+   СЛЕДЫ ШИН: отдельный слой-канвас в мировых координатах. Метки от заноса
+   (асфальт/трава/гравий) накапливаются на нём кадр за кадром и рисуются
+   один раз при композиции, а не пересчитываются заново каждый раз.
+   ========================================================================= */
+let skidCanvas, skidCtx, skidMinX, skidMinY, skidW, skidH;
+const SKID_PX_PER_M = 3;
+const SKID_MAX_DIM = 6000; // защита от гигантского канваса на очень больших трассах
+
+function initSkidLayer(){
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for(const p of CENTER){
+    minX=Math.min(minX,p[0]); maxX=Math.max(maxX,p[0]);
+    minY=Math.min(minY,p[1]); maxY=Math.max(maxY,p[1]);
+  }
+  const margin = HALF_W+12;
+  skidMinX = minX-margin; skidMinY = minY-margin;
+  skidW = (maxX-minX)+margin*2; skidH = (maxY-minY)+margin*2;
+  skidCanvas = document.createElement('canvas');
+  skidCanvas.width = Math.min(SKID_MAX_DIM, Math.ceil(skidW*SKID_PX_PER_M));
+  skidCanvas.height = Math.min(SKID_MAX_DIM, Math.ceil(skidH*SKID_PX_PER_M));
+  skidCtx = skidCanvas.getContext('2d');
+}
+initSkidLayer();
+
+function addSkidMark(wx, wy, radiusM, color, alpha){
+  if(!skidCtx || alpha<=0) return;
+  const sxpm = skidCanvas.width/skidW, sypm = skidCanvas.height/skidH;
+  const px = (wx-skidMinX)*sxpm, py = (wy-skidMinY)*sypm;
+  skidCtx.globalAlpha = Math.min(1, alpha);
+  skidCtx.fillStyle = color;
+  skidCtx.beginPath();
+  skidCtx.arc(px, py, radiusM*sxpm, 0, Math.PI*2);
+  skidCtx.fill();
+}
+
+function drawSkidLayer(){
+  if(!skidCanvas) return;
+  ctx.drawImage(skidCanvas, skidMinX, skidMinY, skidW, skidH);
+}
+
 /* ---- Спрайт машины: файл текстуры зависит от выбранной машины (нос смотрит вверх/на север), с запасным силуэтом ---- */
 const carImg = new Image();
 let carImgOk = false;
@@ -118,6 +159,8 @@ function drawTrack(){
 
   drawCurb(LEFT_EDGE);
   drawCurb(RIGHT_EDGE);
+
+  drawSkidLayer();
 
   ctx.setLineDash([2.2,2.2]);
   ctx.strokeStyle = 'rgba(255,255,255,.5)';
@@ -216,33 +259,52 @@ function drawFinishLine(){
   }
 }
 
-function drawCar(){
-  ctx.save();
-  ctx.translate(car.x, car.y);
-  ctx.rotate(car.heading);
-  const pxLen = CAR.length, pxWid = CAR.width;
-
-  // Тень по форме текстуры: направление считается в МИРОВЫХ координатах (куда
-  // солнце - туда и тень, независимо от того, куда повёрнута машина), поэтому
-  // разворачиваем мировой вектор тени в локальную систему координат машины
-  // (мы уже внутри ctx.rotate(car.heading), значит нужно повернуть на -heading).
+// Реальная "вытянутая" тень: не смещённый дубль-силуэт, а тот же силуэт,
+// растянутый вдоль направления от солнца через явную матрицу масштабирования
+// по произвольной оси. Якорь растяжения стоит у ближнего к солнцу края машины,
+// поэтому тень "держится" за машину и тянется прочь от неё, а не плавает рядом.
+function drawSunShadow(pxLen, pxWid){
+  // Направление тени в МИРОВЫХ координатах переводим в локальную систему
+  // машины (мы уже внутри ctx.rotate(car.heading)) - разворачиваем на -heading
   const cosH = Math.cos(-car.heading), sinH = Math.sin(-car.heading);
   const worldSD = SUN.shadowDir;
   const localSDx = worldSD.x*cosH - worldSD.y*sinH;
   const localSDy = worldSD.x*sinH + worldSD.y*cosH;
-  const shadowLen = pxLen*0.14*SUN.shadowLengthFactor;
-  const shDx = localSDx*shadowLen, shDy = localSDy*shadowLen;
+  const theta = Math.atan2(localSDy, localSDx);
+  const c = Math.cos(theta), s = Math.sin(theta);
+
+  const sx = 1 + (SUN.shadowLengthFactor-1)*0.85; // растяжение вдоль тени
+  const sy = 0.82;                                  // лёгкое сужение поперёк
+  const pivot = -Math.max(pxLen,pxWid)*0.22;        // якорь у края машины, обращённого к солнцу
+
+  // M = R(theta)*diag(sx,sy)*R(-theta) - масштабирование вдоль произвольной оси theta
+  const m00 = sx*c*c + sy*s*s;
+  const m01 = (sx-sy)*s*c;
+  const m10 = (sx-sy)*s*c;
+  const m11 = sx*s*s + sy*c*c;
+  // сдвиг, чтобы точка на расстоянии pivot вдоль оси theta осталась неподвижной
+  const e = pivot*(1-sx)*c;
+  const f = pivot*(1-sx)*s;
 
   ctx.save();
-  ctx.translate(shDx, shDy);
+  ctx.transform(m00, m10, m01, m11, e, f);
   ctx.globalAlpha = SUN.shadowAlphaFactor;
-  try{ ctx.filter = 'blur(0.05px)'; }catch(e){}
+  try{ ctx.filter = 'blur(0.06px)'; }catch(e2){}
   if(carImgOk && carShadowCanvas){
     ctx.drawImage(carShadowCanvas, -pxWid/2, -pxLen/2, pxWid, pxLen);
   } else {
     drawPlaceholderSilhouette(pxLen, pxWid);
   }
   ctx.restore();
+}
+
+function drawCar(){
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.heading);
+  const pxLen = CAR.length, pxWid = CAR.width;
+
+  drawSunShadow(pxLen, pxWid);
 
   if(carImgOk){
     ctx.drawImage(carImg, -pxWid/2, -pxLen/2, pxWid, pxLen);
